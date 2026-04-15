@@ -9,6 +9,7 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: 'intranet_secret_key_please_change',
   resave: false,
@@ -24,6 +25,10 @@ app.use('/', require('./routes/setup'));
 app.use('/', require('./routes/changePw'));
 app.use('/api/users', require('./routes/api/users'));
 app.use('/api/reset_password', require('./routes/api/resetPw'));
+app.use('/api/prog_auth', require('./routes/api/progAuth'));
+
+// ── MPOMS 프로그램 ─────────────────────────────────────────────────────────
+app.use('/mpoms/vesselci', require('./routes/mpoms/vesselci'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, function() {

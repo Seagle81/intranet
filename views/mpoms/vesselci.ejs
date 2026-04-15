@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>코드-모선코드등록</title>
+  <style>
+    /* ── 리셋 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+      font-size: 12px;
+      background: #f0f0f0;
+      color: #222;
+    }
+
+    /* ── 상단 앱바 ── */
+    .app-bar {
+      background: #1a1f36;
+      color: #fff;
+      padding: 0 12px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .app-bar .title { font-weight: bold; }
+    .app-bar .user-info { font-size: 11px; color: rgba(255,255,255,0.65); display: flex; align-items: center; gap: 12px; }
+    .app-bar a { color: rgba(255,255,255,0.7); font-size: 11px; text-decoration: none; }
+    .app-bar a:hover { color: #fff; text-decoration: underline; }
+
+    /* ── 툴바 ── */
+    .toolbar {
+      background: #d4d0c8;
+      padding: 4px 6px;
+      border-bottom: 1px solid #808080;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .toolbar button {
+      width: 72px; height: 28px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid #808080;
+      background: linear-gradient(to bottom, #fff, #d4d0c8);
+      border-radius: 2px;
+    }
+
+    .toolbar button:hover { background: linear-gradient(to bottom, #e8e4dc, #bab5ad); }
+    .toolbar button:disabled { color: #999; cursor: default; background: #d4d0c8; }
+    .toolbar .sep { width: 1px; height: 24px; background: #808080; margin: 0 2px; }
+
+    /* ── 폼 ── */
+    .main-container { padding: 6px; display: flex; flex-direction: column; gap: 6px; }
+
+    .section { background: #fff; border: 1px solid #808080; border-radius: 2px; }
+    .section-title { background: #d4d0c8; padding: 3px 8px; font-weight: bold; font-size: 11px; border-bottom: 1px solid #808080; }
+
+    .form-area {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px 8px;
+    }
+
+    .form-row { display: flex; align-items: center; gap: 4px; }
+    .form-row.full-width { grid-column: 1 / -1; }
+    .form-row.two-col    { grid-column: span 2; }
+
+    label { min-width: 90px; text-align: right; font-size: 11px; white-space: nowrap; }
+
+    input[type="text"], select {
+      height: 22px; border: 1px solid #7f9db9;
+      padding: 1px 4px; font-size: 12px; font-family: inherit;
+      background: #fff; outline: none;
+    }
+
+    input[type="text"]:focus, select:focus { border-color: #0055cc; background: #ffffcc; }
+    input.key-field  { text-transform: uppercase; font-weight: bold; }
+    input.ro-field   { background: #f0f0f0; color: #555; }
+    input.num-field  { text-align: right; }
+    input.error      { background: #ffff99; border-color: #cc0000; }
+
+    .range-row { display: flex; align-items: center; gap: 4px; }
+    .range-sep { font-size: 11px; }
+
+    .help-btn {
+      height: 22px; padding: 0 6px; font-size: 11px;
+      cursor: pointer; border: 1px solid #808080; background: #e8e4dc;
+    }
+    .help-btn:hover { background: #d4d0c8; }
+
+    .divider { grid-column: 1 / -1; height: 1px; background: #c0c0c0; margin: 2px 0; }
+
+    /* ── 그리드 ── */
+    .grid-area { background: #fff; border: 1px solid #808080; }
+    .grid-area table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .grid-area th {
+      background: #d4d0c8; border: 1px solid #808080;
+      padding: 4px 6px; text-align: center; font-weight: bold;
+      cursor: pointer; white-space: nowrap; user-select: none;
+    }
+    .grid-area th:hover { background: #c0bcb4; }
+    .grid-area th.sorted-asc::after  { content: ' ▲'; font-size: 10px; }
+    .grid-area th.sorted-desc::after { content: ' ▼'; font-size: 10px; }
+    .grid-area td { border: 1px solid #c0c0c0; padding: 3px 6px; cursor: pointer; }
+    .grid-area tr:nth-child(even) td { background: #f5f5f5; }
+    .grid-area tr:hover td { background: #cce5ff; }
+    .grid-area tr.selected td { background: #0078d7; color: #fff; }
+    .grid-area td.center { text-align: center; }
+    .grid-area td.right  { text-align: right; }
+
+    /* ── 상태바 ── */
+    .status-bar {
+      background: #d4d0c8; border-top: 1px solid #808080;
+      padding: 3px 8px; display: flex; align-items: center; gap: 8px; font-size: 11px;
+    }
+    .status-msg { flex: 1; color: #cc0000; font-weight: bold; }
+    .status-right { color: #333; border-left: 1px solid #808080; padding-left: 8px; }
+
+    /* ── 권한 배지 ── */
+    .auth-badge {
+      font-size: 10px; padding: 1px 6px; border-radius: 8px;
+      font-weight: bold; border: 1px solid;
+    }
+    .auth-1 { background: #e0f0e0; color: #2a7a2a; border-color: #2a7a2a; }
+    .auth-2 { background: #e0e8ff; color: #1a4acc; border-color: #1a4acc; }
+    .auth-3 { background: #fde8e8; color: #cc2222; border-color: #cc2222; }
+
+    /* ── 모달 ── */
+    .modal-overlay { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,.4); z-index:100; justify-content:center; align-items:center; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:#fff; border:2px solid #1a1f36; min-width:300px; border-radius:4px; box-shadow:4px 4px 12px rgba(0,0,0,.4); }
+    .modal-header { background:#1a1f36; color:#fff; padding:6px 12px; font-weight:bold; font-size:12px; }
+    .modal-body { padding:16px; font-size:13px; }
+    .modal-footer { padding:8px 12px; text-align:right; border-top:1px solid #ddd; display:flex; justify-content:flex-end; gap:6px; }
+    .modal-footer button { padding:4px 16px; font-size:12px; cursor:pointer; border:1px solid #808080; background:#d4d0c8; border-radius:2px; }
+    .modal-footer .btn-primary { background:#1a1f36; color:#fff; border-color:#000; }
+  </style>
+</head>
+<body>
+
+<!-- 앱바: 인트라넷 로그인 사용자 표시 -->
+<div class="app-bar">
+  <span class="title">코드 - 모선코드 등록</span>
+  <div class="user-info">
+    <% const authLabels = ['', '조회', '등록/수정', '삭제포함']; %>
+    <span class="auth-badge auth-<%= authLevel %>"><%= authLabels[authLevel] %></span>
+    <span><%= user.name %> (<%= user.empNo %>)</span>
+    <a href="/main">메인</a>
+    <a href="/logout">로그아웃</a>
+  </div>
+</div>
+
+<!-- 툴바 -->
+<div class="toolbar">
+  <button id="btn-exit"   title="메인으로(ESC)">메인</button>
+  <div class="sep"></div>
+  <button id="btn-search" title="조회(F6)">조회</button>
+  <% if (authLevel >= 2) { %>
+  <button id="btn-add"    title="추가(F9)">추가</button>
+  <button id="btn-save"   title="저장(F3)">저장</button>
+  <% } %>
+  <% if (authLevel >= 3) { %>
+  <button id="btn-delete" title="삭제(F8)">삭제</button>
+  <% } %>
+  <div class="sep"></div>
+  <button id="btn-clear"  title="초기화">초기화</button>
+</div>
+
+<!-- 입력 폼 -->
+<div class="main-container">
+  <div class="section">
+    <div class="section-title">모선 정보 입력</div>
+    <div class="form-area">
+
+      <div class="form-row">
+        <label>모선코드 *</label>
+        <input type="text" id="vessel_code" maxlength="4" class="key-field" style="width:70px">
+        <button class="help-btn" id="btn-code-help">코드검색</button>
+      </div>
+      <div class="form-row two-col">
+        <label>모선명(영문) *</label>
+        <input type="text" id="vessel_name_eng" maxlength="100" style="flex:1">
+      </div>
+
+      <div class="form-row">
+        <label>LINE코드</label>
+        <input type="text" id="line_code" maxlength="3" class="key-field" style="width:50px">
+        <button class="help-btn" id="btn-line-help">LINE</button>
+        <input type="text" id="line_name" maxlength="30" class="ro-field" style="width:110px" readonly>
+      </div>
+      <div class="form-row two-col">
+        <label>모선명(한글)</label>
+        <input type="text" id="vessel_name_kor" maxlength="100" style="flex:1">
+      </div>
+
+      <div class="form-row">
+        <label>국가코드</label>
+        <input type="text" id="country_code" maxlength="2" class="key-field" style="width:40px">
+        <button class="help-btn" id="btn-country-help">국가코드</button>
+        <input type="text" id="country_name" maxlength="30" class="ro-field" style="width:90px" readonly>
+      </div>
+      <div class="form-row">
+        <label>호출부호 *</label>
+        <input type="text" id="call_sign" maxlength="20" style="width:120px">
+      </div>
+      <div class="form-row">
+        <label>선박유형</label>
+        <input type="text" id="ship_type" maxlength="20" style="width:120px">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-row">
+        <label>총톤수</label>
+        <input type="text" id="gross_tonnage" maxlength="15" class="num-field" style="width:100px">
+      </div>
+      <div class="form-row">
+        <label>재화중량톤</label>
+        <input type="text" id="dwt" maxlength="15" class="num-field" style="width:100px">
+      </div>
+      <div class="form-row">
+        <label>전장</label>
+        <input type="text" id="loa" maxlength="10" class="num-field" style="width:90px">
+      </div>
+      <div class="form-row">
+        <label>전폭</label>
+        <input type="text" id="beam" maxlength="10" class="num-field" style="width:90px">
+      </div>
+
+      <div class="form-row">
+        <label>창구개수</label>
+        <input type="text" id="hatch_count" maxlength="10" class="num-field" style="width:90px">
+      </div>
+      <div class="form-row">
+        <label>일공마력수</label>
+        <input type="text" id="horsepower" maxlength="10" class="num-field" style="width:90px">
+      </div>
+      <div class="form-row">
+        <label>흘수기준</label>
+        <input type="text" id="draft" maxlength="8" class="num-field" style="width:80px">
+      </div>
+      <div class="form-row">
+        <label>CNTR/BULK구분</label>
+        <select id="cntr_bulk_type" style="width:90px">
+          <option value="">선택</option>
+          <option value="C">CNTR</option>
+          <option value="B">BULK</option>
+          <option value="G">일반</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-row">
+        <label>화물 MAX HATCH</label>
+        <input type="text" id="max_hatch" maxlength="5" class="num-field" style="width:60px">
+      </div>
+      <div class="form-row">
+        <label>화물 MAX BAY</label>
+        <input type="text" id="bay_to" maxlength="5" class="num-field" style="width:60px">
+      </div>
+      <div class="form-row">
+        <label>CRANE 수</label>
+        <input type="text" id="crane_count" maxlength="5" style="width:60px">
+      </div>
+
+      <div class="form-row">
+        <label>화물 ROW (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="row_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="row_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>화물 ROW DECK (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="rowd_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="rowd_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>TIER HOLD (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="tierh_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="tierh_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>TIER DECK (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="tierd_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="tierd_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-row full-width">
+        <label>REMARK 1</label>
+        <input type="text" id="remark1" maxlength="100" style="flex:1">
+      </div>
+      <div class="form-row full-width">
+        <label>REMARK 2</label>
+        <input type="text" id="remark2" maxlength="100" style="flex:1">
+      </div>
+      <div class="form-row full-width">
+        <label>REMARK 3</label>
+        <input type="text" id="remark3" maxlength="100" style="flex:1">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 그리드 -->
+  <div class="grid-area">
+    <table id="vessel-grid">
+      <thead>
+        <tr>
+          <th data-col="vessel_code"     style="width:80px">모선코드</th>
+          <th data-col="vessel_name_eng" style="width:280px">모선명 (영문)</th>
+          <th data-col="country_code"    style="width:70px">국가코드</th>
+          <th data-col="line_code"       style="width:70px">LINE</th>
+          <th data-col="call_sign"       style="width:100px">호출부호</th>
+          <th data-col="gross_tonnage"   style="width:100px">총 톤 수</th>
+        </tr>
+      </thead>
+      <tbody id="grid-body">
+        <tr><td colspan="6" style="text-align:center;padding:20px;color:#888">조회 버튼을 눌러 목록을 불러오세요.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 상태바 -->
+<div class="status-bar">
+  <span class="status-msg" id="status-msg">조회할 자료를 입력하십시오.</span>
+  <span class="status-right">prc_vesselci</span>
+  <span class="status-right" id="status-date"></span>
+</div>
+
+<!-- 확인 모달 -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal">
+    <div class="modal-header">확인</div>
+    <div class="modal-body" id="modal-confirm-msg"></div>
+    <div class="modal-footer">
+      <button id="modal-yes" class="btn-primary">예(Y)</button>
+      <button id="modal-no">아니오(N)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 서버에서 넘겨준 권한 레벨을 JS 변수로 주입
+const AUTH_LEVEL = <%= authLevel %>;
+const CURRENT_USER = '<%= user.empNo %>';
+</script>
+<script src="/mpoms/vesselci/app.js"></script>
+</body>
+</html>

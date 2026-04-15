@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>접근 오류</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; background: #f0f2f5; font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; display: flex; flex-direction: column; }
+    header {
+      background: linear-gradient(135deg, #1a1f36, #2d3561); color: #fff;
+      padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+    .container { flex: 1; display: flex; align-items: center; justify-content: center; }
+    .card {
+      background: #fff; border-radius: 16px; padding: 48px 40px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.1); text-align: center; max-width: 480px;
+    }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h2 { font-size: 20px; font-weight: 700; color: #cc2222; margin-bottom: 12px; }
+    p  { font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 24px; }
+    a  { display: inline-block; padding: 10px 24px; background: #1a1f36; color: #fff; border-radius: 8px; text-decoration: none; font-size: 14px; }
+    a:hover { background: #2d3561; }
+  </style>
+</head>
+<body>
+<header>
+  <span style="font-size:16px; font-weight:600;">인트라넷</span>
+  <% if (typeof user !== 'undefined' && user) { %>
+  <span style="font-size:13px; color:rgba(255,255,255,0.7);"><%= user.name %> (<%= user.empNo %>)</span>
+  <% } %>
+</header>
+<div class="container">
+  <div class="card">
+    <div class="icon">🚫</div>
+    <h2>접근 권한 없음</h2>
+    <p><%= message || '이 페이지에 접근할 권한이 없습니다.<br>관리자에게 권한을 요청하십시오.' %></p>
+    <a href="/main">메인으로 돌아가기</a>
+  </div>
+</div>
+</body>
+</html>

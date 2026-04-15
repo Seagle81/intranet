@@ -48,6 +48,15 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.07); opacity: 0.5;
     }
 
+    .menu-card-link {
+      opacity: 1; text-decoration: none; color: inherit;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .menu-card-link:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+
     .menu-icon {
       width: 56px; height: 56px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
@@ -88,6 +97,10 @@
       <div class="menu-icon" style="background:#fef9c3;">&#128101;</div>
       <h3>사원 주소록</h3><p>준비 중</p>
     </div>
+    <a class="menu-card menu-card-link" href="/mpoms/vesselci">
+      <div class="menu-icon" style="background:#e0f2fe;">&#9875;</div>
+      <h3>모선코드 등록</h3><p>MPOMS 코드관리</p>
+    </a>
   </div>
 </div>
 </body>

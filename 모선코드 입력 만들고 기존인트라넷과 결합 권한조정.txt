@@ -1,0 +1,3480 @@
+
+지금 열려있는건 VBA로 작성된 항만관리프로그램중 모선을 추가하는 부분이야 이거를 node.js로 재 개발해줘 DB는 mysql 을 사용할꺼고 db설정은 나중에 설정할께
+현재 디렉토리의 파일들을 먼저 살펴볼게요.
+
+Bash 현재 디렉토리 파일 목록 확인
+IN
+ls -la "d:/신항만 운영프로그램 원본/MPOMS/pgm/코드관리/prc_vesselci(모선코드등록)/"
+
+OUT
+The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.
+지금 열려있는건 VBA로 작성된 항만관리프로그램중 모선을 추가하는 부분이야 이거를 node.js로 재 개발해줘 DB는 mysql 을 사용할꺼고 db설정은 나중에 설정할께 만들어진 파일은 D:\002. 개발\004. 개발중 소스\002. mpoms\prc_vesselci 이 폴더에 넣어줘
+먼저 현재 VBA 파일들을 살펴볼게요.
+
+Globpattern: "**/*"
+Found 12 files
+Read frm02.frm
+Read mod01.bas
+Read frm02.frm (lines 2-151)
+Read frm02.frm (lines 151-350)
+Read frm02.frm (lines 601-850)
+Read frm02.frm (lines 851-1150)
+Read frm02.frm (lines 1151-1450)
+Read frm02.frm (lines 1451-1750)
+Read frm02.frm (lines 1751-2050)
+Read frm02.frm (lines 2050-2249)
+Read frm02.frm (lines 2245-2394)
+이제 VBA 코드 분석이 완료됐습니다. Node.js로 변환을 시작할게요.
+
+Bash 대상 디렉토리 존재 여부 확인
+IN
+ls "D:/002. 개발/004. 개발중 소스/002. mpoms/" 2>/dev/null || echo "디렉토리 없음"
+
+OUT
+prc_vesselci
+Bash 대상 폴더 내용 확인
+IN
+ls "D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/"
+
+OUT
+main.js
+Read main.js
+VBA 코드 분석 완료. 이제 Node.js 프로젝트를 생성할게요.
+
+Bash 프로젝트 디렉토리 구조 생성
+IN
+mkdir -p "D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/config" && mkdir -p "D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/routes" && mkdir -p "D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/controllers" && mkdir -p "D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/public/css" && mkdir -p "D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/public/js"
+
+OUT
+(Bash completed with no output)
+Write package.json
+19 lines
+{
+  "name": "prc-vesselci",
+  "version": "1.0.0",
+  "description": "모선코드 등록 관리 프로그램",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.5",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
+Write database.js
+35 lines
+'use strict';
+
+const mysql = require('mysql2/promise');
+
+// DB 설정 - 실제 환경에 맞게 수정
+const dbConfig = {
+  host: 'localhost',
+  port: 3306,
+  user: 'root',
+  password: '',
+  database: 'mpoms',
+  charset: 'utf8mb4',
+  timezone: '+09:00',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+};
+
+const pool = mysql.createPool(dbConfig);
+
+// 연결 테스트
+async function testConnection() {
+  try {
+    const conn = await pool.getConnection();
+    console.log('MySQL 연결 성공');
+    conn.release();
+  } catch (err) {
+    console.error('MySQL 연결 실패:', err.message);
+  }
+}
+
+testConnection();
+
+module.exports = pool;
+Write vesselController.js
+323 lines
+'use strict';
+
+const pool = require('../config/database');
+
+// 목록 조회
+async function getList(req, res) {
+  try {
+    const sql = `
+      SELECT
+        vessel_code,
+        vessel_name_eng,
+        country_code,
+        line_code,
+        call_sign,
+        gross_tonnage
+      FROM t_vessel_c
+      ORDER BY vessel_code
+    `;
+    const [rows] = await pool.query(sql);
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('목록 조회 오류:', err);
+    res.json({ success: false, message: '조회 중 오류가 발생했습니다. ' + err.message });
+  }
+}
+
+// 단건 조회
+async function getOne(req, res) {
+  try {
+    const { code } = req.params;
+    const sql = `
+      SELECT
+        vessel_code,
+        vessel_name_eng,
+        vessel_name_kor,
+        line_code,
+        country_code,
+        call_sign,
+        ship_type,
+        gross_tonnage,
+        dwt,
+        loa,
+        beam,
+        hatch_count,
+        horsepower,
+        draft,
+        max_hatch,
+        bay_to,
+        row_from,
+        row_to,
+        rowd_from,
+        rowd_to,
+        tierh_from,
+        tierh_to,
+        tierd_from,
+        tierd_to,
+        crane_count,
+        cntr_bulk_type,
+        remark1,
+        remark2,
+        remark3
+      FROM t_vessel_c
+      WHERE vessel_code = ?
+    `;
+    const [rows] = await pool.query(sql, [code.toUpperCase()]);
+
+    if (rows.length === 0) {
+      return res.json({ success: false, message: '자료가 없습니다.' });
+    }
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error('단건 조회 오류:', err);
+    res.json({ success: false, message: '조회 중 오류가 발생했습니다. ' + err.message });
+  }
+}
+
+// 호출부호 중복 확인
+async function checkCallSign(req, res) {
+  try {
+    const { callSign } = req.params;
+    const excludeCode = req.query.exclude || '';
+    let sql = 'SELECT vessel_code FROM t_vessel_c WHERE call_sign = ?';
+    const params = [callSign];
+
+    if (excludeCode) {
+      sql += ' AND vessel_code <> ?';
+      params.push(excludeCode.toUpperCase());
+    }
+
+    const [rows] = await pool.query(sql, params);
+    res.json({ success: true, exists: rows.length > 0 });
+  } catch (err) {
+    console.error('호출부호 확인 오류:', err);
+    res.json({ success: false, message: err.message });
+  }
+}
+
+// 등록
+async function insert(req, res) {
+  try {
+    const d = req.body;
+    const now = new Date().toISOString().replace(/[-T:.Z]/g, '').slice(0, 12); // yyyymmddHHmm
+
+    // 필수값 검증
+    if (!d.vessel_code || !d.vessel_code.trim()) {
+      return res.json({ success: false, message: '모선코드를 입력하십시오.' });
+    }
+    if (!d.vessel_name_eng || !d.vessel_name_eng.trim()) {
+      return res.json({ success: false, message: '모선명을 입력하십시오.' });
+    }
+    if (!d.call_sign || !d.call_sign.trim()) {
+      return res.json({ success: false, message: '호출부호를 입력하십시오.' });
+    }
+
+    const sql = `
+      INSERT INTO t_vessel_c (
+        vessel_code, vessel_name_eng, vessel_name_kor,
+        line_code, country_code, call_sign, ship_type,
+        gross_tonnage, dwt, loa, beam, hatch_count,
+        horsepower, draft, max_hatch, bay_to,
+        row_from, row_to, rowd_from, rowd_to,
+        tierh_from, tierh_to, tierd_from, tierd_to,
+        crane_count, cntr_bulk_type,
+        remark1, remark2, remark3,
+        input_program, input_user, input_datetime
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?,
+        ?, ?, ?,
+        ?, ?, ?
+      )
+    `;
+
+    const values = [
+      (d.vessel_code || '').toUpperCase().trim(),
+      (d.vessel_name_eng || '').trim(),
+      (d.vessel_name_kor || '').trim(),
+      (d.line_code || '').toUpperCase().trim(),
+      (d.country_code || '').toUpperCase().trim(),
+      (d.call_sign || '').trim(),
+      (d.ship_type || '').trim(),
+      parseNumeric(d.gross_tonnage),
+      parseNumeric(d.dwt),
+      parseNumeric(d.loa),
+      parseNumeric(d.beam),
+      parseNumeric(d.hatch_count),
+      parseNumeric(d.horsepower),
+      parseNumeric(d.draft),
+      (d.max_hatch || '').trim(),
+      padZero(d.bay_to),
+      padZero(d.row_from),
+      padZero(d.row_to),
+      padZero(d.rowd_from),
+      padZero(d.rowd_to),
+      padZero(d.tierh_from),
+      padZero(d.tierh_to),
+      padZero(d.tierd_from),
+      padZero(d.tierd_to),
+      (d.crane_count || '').trim(),
+      (d.cntr_bulk_type || '').trim(),
+      (d.remark1 || '').trim(),
+      (d.remark2 || '').trim(),
+      (d.remark3 || '').trim(),
+      'prc_vesselci',
+      (d.input_user || 'SYSTEM').trim(),
+      now
+    ];
+
+    await pool.query(sql, values);
+    res.json({ success: true, message: '등록되었습니다.' });
+  } catch (err) {
+    console.error('등록 오류:', err);
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.json({ success: false, message: '이미 등록된 모선코드입니다.' });
+    }
+    res.json({ success: false, message: '입력오류입니다. ' + err.message });
+  }
+}
+
+// 수정
+async function update(req, res) {
+  try {
+    const { code } = req.params;
+    const d = req.body;
+    const now = new Date().toISOString().replace(/[-T:.Z]/g, '').slice(0, 12);
+
+    if (!d.vessel_name_eng || !d.vessel_name_eng.trim()) {
+      return res.json({ success: false, message: '모선명을 입력하십시오.' });
+    }
+    if (!d.call_sign || !d.call_sign.trim()) {
+      return res.json({ success: false, message: '호출부호를 입력하십시오.' });
+    }
+
+    const sql = `
+      UPDATE t_vessel_c SET
+        vessel_name_eng = ?, vessel_name_kor = ?,
+        line_code = ?, country_code = ?, call_sign = ?, ship_type = ?,
+        gross_tonnage = ?, dwt = ?, loa = ?, beam = ?, hatch_count = ?,
+        horsepower = ?, draft = ?, max_hatch = ?, bay_to = ?,
+        row_from = ?, row_to = ?, rowd_from = ?, rowd_to = ?,
+        tierh_from = ?, tierh_to = ?, tierd_from = ?, tierd_to = ?,
+        crane_count = ?, cntr_bulk_type = ?,
+        remark1 = ?, remark2 = ?, remark3 = ?,
+        update_program = ?, update_user = ?, update_datetime = ?
+      WHERE vessel_code = ?
+    `;
+
+    const values = [
+      (d.vessel_name_eng || '').trim(),
+      (d.vessel_name_kor || '').trim(),
+      (d.line_code || '').toUpperCase().trim(),
+      (d.country_code || '').toUpperCase().trim(),
+      (d.call_sign || '').trim(),
+      (d.ship_type || '').trim(),
+      parseNumeric(d.gross_tonnage),
+      parseNumeric(d.dwt),
+      parseNumeric(d.loa),
+      parseNumeric(d.beam),
+      parseNumeric(d.hatch_count),
+      parseNumeric(d.horsepower),
+      parseNumeric(d.draft),
+      (d.max_hatch || '').trim(),
+      padZero(d.bay_to),
+      padZero(d.row_from),
+      padZero(d.row_to),
+      padZero(d.rowd_from),
+      padZero(d.rowd_to),
+      padZero(d.tierh_from),
+      padZero(d.tierh_to),
+      padZero(d.tierd_from),
+      padZero(d.tierd_to),
+      (d.crane_count || '').trim(),
+      (d.cntr_bulk_type || '').trim(),
+      (d.remark1 || '').trim(),
+      (d.remark2 || '').trim(),
+      (d.remark3 || '').trim(),
+      'prc_vesselci',
+      (d.update_user || 'SYSTEM').trim(),
+      now,
+      code.toUpperCase()
+    ];
+
+    const [result] = await pool.query(sql, values);
+    if (result.affectedRows === 0) {
+      return res.json({ success: false, message: '수정할 자료가 없습니다.' });
+    }
+    res.json({ success: true, message: '수정되었습니다.' });
+  } catch (err) {
+    console.error('수정 오류:', err);
+    res.json({ success: false, message: '수정오류입니다. ' + err.message });
+  }
+}
+
+// 삭제
+async function remove(req, res) {
+  try {
+    const { code } = req.params;
+    const sql = 'DELETE FROM t_vessel_c WHERE vessel_code = ?';
+    const [result] = await pool.query(sql, [code.toUpperCase()]);
+
+    if (result.affectedRows === 0) {
+      return res.json({ success: false, message: '삭제할 자료가 없습니다.' });
+    }
+    res.json({ success: true, message: '삭제되었습니다.' });
+  } catch (err) {
+    console.error('삭제 오류:', err);
+    res.json({ success: false, message: '삭제오류입니다. ' + err.message });
+  }
+}
+
+// LINE코드 조회
+async function getLine(req, res) {
+  try {
+    const { code } = req.params;
+    const sql = 'SELECT line_code, line_name FROM t_line_c WHERE line_code = ?';
+    const [rows] = await pool.query(sql, [code.toUpperCase()]);
+
+    if (rows.length === 0) {
+      return res.json({ success: false, message: 'LINE코드를 확인하십시오.' });
+    }
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error('LINE 조회 오류:', err);
+    res.json({ success: false, message: err.message });
+  }
+}
+
+// 국가코드 조회
+async function getCountry(req, res) {
+  try {
+    const { code } = req.params;
+    const sql = 'SELECT country_code, country_name FROM t_country_c WHERE country_code = ?';
+    const [rows] = await pool.query(sql, [code.toUpperCase()]);
+
+    if (rows.length === 0) {
+      return res.json({ success: false, message: '국가코드를 확인 하십시오.' });
+    }
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error('국가코드 조회 오류:', err);
+    res.json({ success: false, message: err.message });
+  }
+}
+
+// 유틸: 숫자 파싱 (쉼표 제거)
+function parseNumeric(val) {
+  if (val === null || val === undefined || val === '') return null;
+  const n = parseFloat(String(val).replace(/,/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+// 유틸: 2자리 영문 패딩
+function padZero(val) {
+  if (val === null || val === undefined || val === '') return '';
+  return String(val).padStart(2, '0');
+}
+
+module.exports = { getList, getOne, checkCallSign, insert, update, remove, getLine, getCountry };
+Write vessel.js
+32 lines
+'use strict';
+
+const express = require('express');
+const router = express.Router();
+const ctrl = require('../controllers/vesselController');
+
+// 모선 목록 조회
+router.get('/', ctrl.getList);
+
+// LINE코드 조회 (단건조회 라우트보다 먼저 등록)
+router.get('/line/:code', ctrl.getLine);
+
+// 국가코드 조회
+router.get('/country/:code', ctrl.getCountry);
+
+// 호출부호 중복 확인
+router.get('/check-callsign/:callSign', ctrl.checkCallSign);
+
+// 모선 단건 조회
+router.get('/:code', ctrl.getOne);
+
+// 모선 등록
+router.post('/', ctrl.insert);
+
+// 모선 수정
+router.put('/:code', ctrl.update);
+
+// 모선 삭제
+router.delete('/:code', ctrl.remove);
+
+module.exports = router;
+Write server.js
+29 lines
+'use strict';
+
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// 정적 파일 서빙
+app.use(express.static(path.join(__dirname, 'public')));
+
+// API 라우터
+const vesselRouter = require('./routes/vessel');
+app.use('/api/vessels', vesselRouter);
+
+// 루트 접속 시 index.html 반환
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`모선코드등록 서버 실행중: http://localhost:${PORT}`);
+});
+이제 프론트엔드를 만들게요.
+
+Write style.css
+366 lines
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+  font-size: 12px;
+  background: #f0f0f0;
+  color: #222;
+}
+
+/* 제목바 */
+.title-bar {
+  background: #003399;
+  color: #fff;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title-bar .prog-id {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* 툴바 버튼 */
+.toolbar {
+  background: #d4d0c8;
+  padding: 4px 6px;
+  border-bottom: 1px solid #808080;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.toolbar button {
+  width: 72px;
+  height: 28px;
+  font-size: 12px;
+  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+  cursor: pointer;
+  border: 1px solid #808080;
+  background: linear-gradient(to bottom, #ffffff, #d4d0c8);
+  border-radius: 2px;
+}
+
+.toolbar button:hover {
+  background: linear-gradient(to bottom, #e8e4dc, #bab5ad);
+}
+
+.toolbar button:active {
+  background: #d4d0c8;
+  transform: translateY(1px);
+}
+
+.toolbar button:disabled {
+  color: #999;
+  cursor: default;
+}
+
+.toolbar .sep {
+  width: 1px;
+  height: 24px;
+  background: #808080;
+  margin: 0 2px;
+}
+
+/* 메인 컨테이너 */
+.main-container {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 입력 폼 섹션 */
+.section {
+  background: #fff;
+  border: 1px solid #808080;
+  border-radius: 2px;
+}
+
+.section-title {
+  background: #d4d0c8;
+  padding: 3px 8px;
+  font-weight: bold;
+  font-size: 11px;
+  border-bottom: 1px solid #808080;
+}
+
+.form-area {
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px 8px;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-row.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-row.two-col {
+  grid-column: span 2;
+}
+
+label {
+  min-width: 90px;
+  text-align: right;
+  color: #333;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+input[type="text"],
+select {
+  height: 22px;
+  border: 1px solid #7f9db9;
+  padding: 1px 4px;
+  font-size: 12px;
+  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+  background: #fff;
+  outline: none;
+}
+
+input[type="text"]:focus,
+select:focus {
+  border-color: #0055cc;
+  background: #ffffcc;
+}
+
+input.key-field {
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+input.readonly-field {
+  background: #f0f0f0;
+  color: #555;
+}
+
+input.required {
+  border-left: 3px solid #cc0000;
+}
+
+input.error {
+  background: #ffff99;
+  border-color: #cc0000;
+}
+
+/* 숫자 입력 */
+input.num-field {
+  text-align: right;
+}
+
+/* 범위 입력 (FR ~ TO) */
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.range-row input {
+  width: 50px;
+}
+
+.range-sep {
+  font-size: 11px;
+  color: #555;
+}
+
+/* 서브 도움말 버튼 */
+.help-btn {
+  height: 22px;
+  padding: 0 6px;
+  font-size: 11px;
+  cursor: pointer;
+  border: 1px solid #808080;
+  background: #e8e4dc;
+  white-space: nowrap;
+}
+
+.help-btn:hover {
+  background: #d4d0c8;
+}
+
+/* 구분선 */
+.divider {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: #c0c0c0;
+  margin: 2px 0;
+}
+
+/* 그리드 영역 */
+.grid-area {
+  background: #fff;
+  border: 1px solid #808080;
+}
+
+.grid-area table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.grid-area table th {
+  background: #d4d0c8;
+  border: 1px solid #808080;
+  padding: 4px 6px;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.grid-area table th:hover {
+  background: #c0bcb4;
+}
+
+.grid-area table th.sorted-asc::after {
+  content: ' ▲';
+  font-size: 10px;
+}
+
+.grid-area table th.sorted-desc::after {
+  content: ' ▼';
+  font-size: 10px;
+}
+
+.grid-area table td {
+  border: 1px solid #c0c0c0;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+
+.grid-area table tr:nth-child(even) td {
+  background: #f5f5f5;
+}
+
+.grid-area table tr:hover td {
+  background: #cce5ff;
+}
+
+.grid-area table tr.selected td {
+  background: #0078d7;
+  color: #fff;
+}
+
+.grid-area table td.center {
+  text-align: center;
+}
+
+.grid-area table td.right {
+  text-align: right;
+}
+
+/* 상태바 */
+.status-bar {
+  background: #d4d0c8;
+  border-top: 1px solid #808080;
+  padding: 3px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.status-msg {
+  flex: 1;
+  color: #cc0000;
+  font-weight: bold;
+}
+
+.status-prog {
+  color: #333;
+  border-left: 1px solid #808080;
+  padding-left: 8px;
+}
+
+.status-date {
+  color: #333;
+  border-left: 1px solid #808080;
+  padding-left: 8px;
+}
+
+/* 모달 */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 100;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal {
+  background: #fff;
+  border: 2px solid #003399;
+  min-width: 320px;
+  max-width: 500px;
+  border-radius: 4px;
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.4);
+}
+
+.modal-header {
+  background: #003399;
+  color: #fff;
+  padding: 6px 12px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.modal-body {
+  padding: 16px;
+  font-size: 13px;
+}
+
+.modal-footer {
+  padding: 8px 12px;
+  text-align: right;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.modal-footer button {
+  padding: 4px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid #808080;
+  background: #d4d0c8;
+  border-radius: 2px;
+}
+
+.modal-footer button:hover {
+  background: #c0bcb4;
+}
+
+.modal-footer button.btn-primary {
+  background: #003399;
+  color: #fff;
+  border-color: #002277;
+}
+
+.modal-footer button.btn-primary:hover {
+  background: #0044bb;
+}
+Write index.html
+233 lines
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>코드-모선코드등록</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- 제목바 -->
+<div class="title-bar">
+  <span>코드 - 모선코드 등록</span>
+  <span class="prog-id">prc_vesselci</span>
+</div>
+
+<!-- 툴바 -->
+<div class="toolbar">
+  <button id="btn-exit"  title="종료(ESC)">종료</button>
+  <div class="sep"></div>
+  <button id="btn-search" title="조회(F6)">조회</button>
+  <button id="btn-add"    title="추가(F9)">추가</button>
+  <button id="btn-save"   title="저장(F3)">저장</button>
+  <button id="btn-delete" title="삭제(F8)">삭제</button>
+  <div class="sep"></div>
+  <button id="btn-clear"  title="초기화">초기화</button>
+</div>
+
+<!-- 메인 -->
+<div class="main-container">
+
+  <!-- 입력 폼 -->
+  <div class="section">
+    <div class="section-title">모선 정보 입력</div>
+    <div class="form-area">
+
+      <!-- 1행: 모선코드 / 모선명(영문) -->
+      <div class="form-row">
+        <label>모선코드 *</label>
+        <input type="text" id="vessel_code" maxlength="4" class="key-field required" style="width:70px" placeholder="XXXX">
+        <button class="help-btn" id="btn-code-help">코드검색</button>
+      </div>
+      <div class="form-row two-col">
+        <label>모선명(영문) *</label>
+        <input type="text" id="vessel_name_eng" maxlength="100" class="required" style="flex:1">
+      </div>
+
+      <!-- 2행: LINE코드 / 모선명(한글) -->
+      <div class="form-row">
+        <label>LINE코드</label>
+        <input type="text" id="line_code" maxlength="3" class="key-field" style="width:50px" placeholder="XXX">
+        <button class="help-btn" id="btn-line-help">LINE</button>
+        <input type="text" id="line_name" maxlength="30" class="readonly-field" style="width:120px" readonly>
+      </div>
+      <div class="form-row two-col">
+        <label>모선명(한글)</label>
+        <input type="text" id="vessel_name_kor" maxlength="100" style="flex:1">
+      </div>
+
+      <!-- 3행: 국가코드 / 호출부호 / 선박유형 -->
+      <div class="form-row">
+        <label>국가코드</label>
+        <input type="text" id="country_code" maxlength="2" class="key-field" style="width:40px" placeholder="XX">
+        <button class="help-btn" id="btn-country-help">국가코드</button>
+        <input type="text" id="country_name" maxlength="30" class="readonly-field" style="width:100px" readonly>
+      </div>
+      <div class="form-row">
+        <label>호출부호 *</label>
+        <input type="text" id="call_sign" maxlength="20" class="required" style="width:120px">
+      </div>
+      <div class="form-row">
+        <label>선박유형</label>
+        <input type="text" id="ship_type" maxlength="20" style="width:120px">
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 4행: 총톤수 / 재화중량톤 / 전장 / 전폭 -->
+      <div class="form-row">
+        <label>총톤수</label>
+        <input type="text" id="gross_tonnage" maxlength="15" class="num-field" style="width:100px">
+      </div>
+      <div class="form-row">
+        <label>재화중량톤</label>
+        <input type="text" id="dwt" maxlength="15" class="num-field" style="width:100px">
+      </div>
+      <div class="form-row">
+        <label>전장</label>
+        <input type="text" id="loa" maxlength="10" class="num-field" style="width:90px">
+      </div>
+      <div class="form-row">
+        <label>전폭</label>
+        <input type="text" id="beam" maxlength="10" class="num-field" style="width:90px">
+      </div>
+
+      <!-- 5행: 창구개수 / 일공마력수 / 흘수기준 -->
+      <div class="form-row">
+        <label>창구개수</label>
+        <input type="text" id="hatch_count" maxlength="10" class="num-field" style="width:90px">
+      </div>
+      <div class="form-row">
+        <label>일공마력수</label>
+        <input type="text" id="horsepower" maxlength="10" class="num-field" style="width:90px">
+      </div>
+      <div class="form-row">
+        <label>흘수기준</label>
+        <input type="text" id="draft" maxlength="8" class="num-field" style="width:80px">
+      </div>
+      <div class="form-row">
+        <label>CNTR/BULK구분</label>
+        <select id="cntr_bulk_type" style="width:90px">
+          <option value="">선택</option>
+          <option value="C">CNTR</option>
+          <option value="B">BULK</option>
+          <option value="G">일반</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 6행: 화물 MAX HATCH / MAX BAY / CRANE 수 -->
+      <div class="form-row">
+        <label>화물 MAX HATCH</label>
+        <input type="text" id="max_hatch" maxlength="5" class="num-field" style="width:60px">
+      </div>
+      <div class="form-row">
+        <label>화물 MAX BAY</label>
+        <input type="text" id="bay_to" maxlength="5" class="num-field" style="width:60px">
+      </div>
+      <div class="form-row">
+        <label>CRANE 수</label>
+        <input type="text" id="crane_count" maxlength="5" style="width:60px">
+      </div>
+
+      <!-- 7행: 화물 ROW / DECK ROW -->
+      <div class="form-row">
+        <label>화물 ROW (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="row_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="row_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>화물 ROW DECK (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="rowd_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="rowd_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+
+      <!-- 8행: TIER HOLD / TIER DECK -->
+      <div class="form-row">
+        <label>TIER HOLD (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="tierh_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="tierh_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>TIER DECK (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="tierd_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="tierd_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 9행: REMARK -->
+      <div class="form-row full-width">
+        <label>REMARK 1</label>
+        <input type="text" id="remark1" maxlength="100" style="flex:1">
+      </div>
+      <div class="form-row full-width">
+        <label>REMARK 2</label>
+        <input type="text" id="remark2" maxlength="100" style="flex:1">
+      </div>
+      <div class="form-row full-width">
+        <label>REMARK 3</label>
+        <input type="text" id="remark3" maxlength="100" style="flex:1">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 그리드 목록 -->
+  <div class="grid-area">
+    <table id="vessel-grid">
+      <thead>
+        <tr>
+          <th data-col="vessel_code"    style="width:80px">모선코드</th>
+          <th data-col="vessel_name_eng" style="width:280px">모선명 (영문)</th>
+          <th data-col="country_code"   style="width:70px">국가코드</th>
+          <th data-col="line_code"      style="width:70px">LINE</th>
+          <th data-col="call_sign"      style="width:100px">호출부호</th>
+          <th data-col="gross_tonnage"  style="width:100px">총 톤 수</th>
+        </tr>
+      </thead>
+      <tbody id="grid-body">
+        <tr><td colspan="6" style="text-align:center;padding:20px;color:#888">조회 버튼을 눌러 목록을 불러오세요.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- 상태바 -->
+<div class="status-bar">
+  <span class="status-msg" id="status-msg">조회할 자료를 입력하십시오.</span>
+  <span class="status-prog">prc_vesselci</span>
+  <span class="status-date" id="status-date"></span>
+</div>
+
+<!-- 확인 모달 -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal">
+    <div class="modal-header">확인</div>
+    <div class="modal-body" id="modal-confirm-msg"></div>
+    <div class="modal-footer">
+      <button id="modal-yes" class="btn-primary">예(Y)</button>
+      <button id="modal-no">아니오(N)</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
+Write app.js
+594 lines
+'use strict';
+
+// ============================================================
+// 상태 관리
+// ============================================================
+const MODE = { ADD: 'add', MODIFY: 'modify', READ: 'read' };
+let currentMode = MODE.READ;
+let isLoaded = false;   // 단건 조회 완료 여부
+let sortCol = '';
+let sortDir = 'asc';
+let gridData = [];
+
+// ============================================================
+// DOM 참조
+// ============================================================
+const $ = (id) => document.getElementById(id);
+
+const fields = {
+  vessel_code:    $('vessel_code'),
+  vessel_name_eng:$('vessel_name_eng'),
+  vessel_name_kor:$('vessel_name_kor'),
+  line_code:      $('line_code'),
+  line_name:      $('line_name'),
+  country_code:   $('country_code'),
+  country_name:   $('country_name'),
+  call_sign:      $('call_sign'),
+  ship_type:      $('ship_type'),
+  gross_tonnage:  $('gross_tonnage'),
+  dwt:            $('dwt'),
+  loa:            $('loa'),
+  beam:           $('beam'),
+  hatch_count:    $('hatch_count'),
+  horsepower:     $('horsepower'),
+  draft:          $('draft'),
+  cntr_bulk_type: $('cntr_bulk_type'),
+  max_hatch:      $('max_hatch'),
+  bay_to:         $('bay_to'),
+  row_from:       $('row_from'),
+  row_to:         $('row_to'),
+  rowd_from:      $('rowd_from'),
+  rowd_to:        $('rowd_to'),
+  tierh_from:     $('tierh_from'),
+  tierh_to:       $('tierh_to'),
+  tierd_from:     $('tierd_from'),
+  tierd_to:       $('tierd_to'),
+  crane_count:    $('crane_count'),
+  remark1:        $('remark1'),
+  remark2:        $('remark2'),
+  remark3:        $('remark3'),
+};
+
+// ============================================================
+// 초기화
+// ============================================================
+function init() {
+  // 오늘 날짜 표시
+  $('status-date').textContent = new Date().toLocaleDateString('ko-KR');
+
+  // 이벤트 바인딩
+  $('btn-exit').addEventListener('click', handleExit);
+  $('btn-search').addEventListener('click', handleSearch);
+  $('btn-add').addEventListener('click', handleAdd);
+  $('btn-save').addEventListener('click', handleSave);
+  $('btn-delete').addEventListener('click', handleDelete);
+  $('btn-clear').addEventListener('click', () => clearForm(false));
+
+  // 도움말 버튼 (임시 alert - 실제 팝업으로 대체 가능)
+  $('btn-code-help').addEventListener('click', () => showMsg('모선코드 검색 팝업을 연결하세요.'));
+  $('btn-line-help').addEventListener('click', () => showMsg('LINE코드 검색 팝업을 연결하세요.'));
+  $('btn-country-help').addEventListener('click', () => showMsg('국가코드 검색 팝업을 연결하세요.'));
+
+  // 모선코드 대문자 자동 변환 & 포커스 이탈 시 조회
+  fields.vessel_code.addEventListener('input', () => {
+    fields.vessel_code.value = fields.vessel_code.value.toUpperCase();
+  });
+  fields.vessel_code.addEventListener('blur', onVesselCodeBlur);
+
+  // LINE코드 대문자 변환 & 포커스 이탈 시 검증
+  fields.line_code.addEventListener('input', () => {
+    fields.line_code.value = fields.line_code.value.toUpperCase();
+  });
+  fields.line_code.addEventListener('blur', onLineCodeBlur);
+
+  // 국가코드 대문자 변환 & 포커스 이탈 시 검증
+  fields.country_code.addEventListener('input', () => {
+    fields.country_code.value = fields.country_code.value.toUpperCase();
+  });
+  fields.country_code.addEventListener('blur', onCountryCodeBlur);
+
+  // 숫자 입력 필드 포커스 시 쉼표 제거, 포커스 이탈 시 포맷
+  const numFields = ['gross_tonnage','dwt','loa','beam','hatch_count','horsepower','draft'];
+  numFields.forEach(name => {
+    fields[name].addEventListener('focus', () => {
+      fields[name].value = fields[name].value.replace(/,/g, '');
+    });
+    fields[name].addEventListener('blur', () => {
+      fields[name].value = formatNumber(fields[name].value, name);
+    });
+  });
+
+  // 키보드 단축키
+  document.addEventListener('keydown', onKeyDown);
+
+  // 그리드 헤더 정렬
+  document.querySelectorAll('#vessel-grid th').forEach(th => {
+    th.addEventListener('click', () => onHeaderClick(th.dataset.col));
+  });
+
+  // 초기 상태
+  setMode(MODE.READ);
+  showMsg('조회할 자료를 입력하십시오.');
+}
+
+// ============================================================
+// 키보드 단축키
+// ============================================================
+function onKeyDown(e) {
+  // 입력 필드 안에서는 단축키 무시하지 않음 (특정 키만)
+  switch (e.key) {
+    case 'Escape':
+      e.preventDefault();
+      clearForm(false);
+      setMode(MODE.READ);
+      break;
+    case 'F3':
+      e.preventDefault();
+      handleSave();
+      break;
+    case 'F6':
+      e.preventDefault();
+      handleSearch();
+      break;
+    case 'F8':
+      e.preventDefault();
+      handleDelete();
+      break;
+    case 'F9':
+      e.preventDefault();
+      handleAdd();
+      break;
+  }
+}
+
+// ============================================================
+// 모드 설정
+// ============================================================
+function setMode(mode) {
+  currentMode = mode;
+  const isReadMode = mode === MODE.READ;
+  const hasData = isLoaded;
+
+  fields.vessel_code.readOnly = (mode === MODE.MODIFY);
+  $('btn-delete').disabled = !hasData || isReadMode;
+
+  if (mode === MODE.READ) {
+    showMsg('조회할 자료를 입력하십시오.');
+  } else if (mode === MODE.ADD) {
+    showMsg('추가할 모선 정보를 입력 후 저장 버튼을 누르십시오.');
+  } else if (mode === MODE.MODIFY) {
+    showMsg('수정할 내용을 입력 후 저장 버튼을 누르십시오.');
+  }
+}
+
+// ============================================================
+// 버튼 핸들러
+// ============================================================
+async function handleExit() {
+  if (window.confirm('종료하시겠습니까?')) {
+    window.close();
+  }
+}
+
+async function handleSearch() {
+  const code = fields.vessel_code.value.trim();
+  if (!code) {
+    showMsg('모선코드를 입력하십시오.');
+    fields.vessel_code.focus();
+    return;
+  }
+
+  showMsg('조회중...');
+  const result = await api('GET', `/api/vessels/${code}`);
+  if (!result.success) {
+    showMsg(result.message);
+    isLoaded = false;
+    return;
+  }
+
+  fillForm(result.data);
+  isLoaded = true;
+  setMode(MODE.MODIFY);
+  showMsg('조회되었습니다.');
+
+  // 그리드도 갱신
+  await loadGrid();
+}
+
+function handleAdd() {
+  clearForm(false);
+  isLoaded = false;
+  setMode(MODE.ADD);
+  fields.vessel_code.readOnly = false;
+  fields.vessel_code.focus();
+}
+
+async function handleSave() {
+  if (!validate()) return;
+
+  if (currentMode === MODE.ADD) {
+    // 추가 전 중복 확인
+    const checkResult = await api('GET', `/api/vessels/${fields.vessel_code.value.trim()}`);
+    if (checkResult.success) {
+      showMsg('이미 등록된 모선코드입니다. 수정 모드로 전환합니다.');
+      fillForm(checkResult.data);
+      isLoaded = true;
+      setMode(MODE.MODIFY);
+      return;
+    }
+
+    const result = await api('POST', '/api/vessels', getFormData());
+    if (!result.success) { showMsg(result.message); return; }
+    showMsg(result.message);
+    isLoaded = true;
+    setMode(MODE.MODIFY);
+    await loadGrid();
+
+  } else if (currentMode === MODE.MODIFY) {
+    const code = fields.vessel_code.value.trim();
+    const result = await api('PUT', `/api/vessels/${code}`, getFormData());
+    if (!result.success) { showMsg(result.message); return; }
+    showMsg(result.message);
+    await loadGrid();
+  }
+}
+
+async function handleDelete() {
+  if (!isLoaded) {
+    showMsg('먼저 자료를 조회하십시오.');
+    return;
+  }
+
+  const ok = await confirm('정말 삭제하시겠습니까?');
+  if (!ok) return;
+
+  const code = fields.vessel_code.value.trim();
+  const result = await api('DELETE', `/api/vessels/${code}`);
+  if (!result.success) { showMsg(result.message); return; }
+
+  showMsg(result.message);
+  clearForm(false);
+  isLoaded = false;
+  setMode(MODE.READ);
+  await loadGrid();
+}
+
+// ============================================================
+// 포커스 이탈 이벤트
+// ============================================================
+async function onVesselCodeBlur() {
+  const code = fields.vessel_code.value.trim();
+  if (!code) return;
+  if (currentMode !== MODE.READ) return;
+
+  const result = await api('GET', `/api/vessels/${code}`);
+  if (result.success) {
+    fillForm(result.data);
+    isLoaded = true;
+    setMode(MODE.MODIFY);
+    showMsg('조회되었습니다.');
+  } else {
+    if (currentMode === MODE.READ) {
+      setMode(MODE.ADD);
+      isLoaded = false;
+    }
+  }
+}
+
+async function onLineCodeBlur() {
+  const code = fields.line_code.value.trim();
+  if (!code) { fields.line_name.value = ''; return; }
+
+  const result = await api('GET', `/api/vessels/line/${code}`);
+  if (result.success) {
+    fields.line_name.value = result.data.line_name || '';
+    markFieldOk(fields.line_code);
+  } else {
+    fields.line_name.value = '';
+    markFieldError(fields.line_code, result.message);
+  }
+}
+
+async function onCountryCodeBlur() {
+  const code = fields.country_code.value.trim();
+  if (!code) { fields.country_name.value = ''; return; }
+
+  const result = await api('GET', `/api/vessels/country/${code}`);
+  if (result.success) {
+    fields.country_name.value = result.data.country_name || '';
+    markFieldOk(fields.country_code);
+  } else {
+    fields.country_name.value = '';
+    markFieldError(fields.country_code, result.message);
+  }
+}
+
+// ============================================================
+// 그리드
+// ============================================================
+async function loadGrid() {
+  const result = await api('GET', '/api/vessels');
+  if (!result.success) {
+    showMsg(result.message);
+    return;
+  }
+  gridData = result.data;
+  renderGrid(gridData);
+}
+
+function renderGrid(data) {
+  const tbody = $('grid-body');
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#888">자료가 없습니다.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((row, idx) => `
+    <tr data-code="${row.vessel_code}" data-idx="${idx}">
+      <td class="center">${esc(row.vessel_code)}</td>
+      <td>${esc(row.vessel_name_eng)}</td>
+      <td class="center">${esc(row.country_code)}</td>
+      <td class="center">${esc(row.line_code)}</td>
+      <td class="center">${esc(row.call_sign)}</td>
+      <td class="right">${fmtGross(row.gross_tonnage)}</td>
+    </tr>
+  `).join('');
+
+  // 더블클릭 - 단건 조회
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.addEventListener('dblclick', async () => {
+      const code = tr.dataset.code;
+      fields.vessel_code.value = code;
+      const result = await api('GET', `/api/vessels/${code}`);
+      if (result.success) {
+        fillForm(result.data);
+        isLoaded = true;
+        setMode(MODE.MODIFY);
+        showMsg('조회되었습니다.');
+        highlightRow(tr);
+      }
+    });
+
+    tr.addEventListener('click', () => highlightRow(tr));
+  });
+}
+
+function highlightRow(tr) {
+  document.querySelectorAll('#grid-body tr').forEach(r => r.classList.remove('selected'));
+  tr.classList.add('selected');
+}
+
+function onHeaderClick(col) {
+  if (sortCol === col) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortCol = col;
+    sortDir = 'asc';
+  }
+
+  // 헤더 표시 업데이트
+  document.querySelectorAll('#vessel-grid th').forEach(th => {
+    th.classList.remove('sorted-asc', 'sorted-desc');
+    if (th.dataset.col === sortCol) {
+      th.classList.add(sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+    }
+  });
+
+  const sorted = [...gridData].sort((a, b) => {
+    const va = String(a[col] ?? '');
+    const vb = String(b[col] ?? '');
+    return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+  renderGrid(sorted);
+}
+
+// ============================================================
+// 폼 처리
+// ============================================================
+function fillForm(d) {
+  fields.vessel_code.value     = d.vessel_code || '';
+  fields.vessel_name_eng.value = d.vessel_name_eng || '';
+  fields.vessel_name_kor.value = d.vessel_name_kor || '';
+  fields.line_code.value       = d.line_code || '';
+  fields.line_name.value       = d.line_name || '';
+  fields.country_code.value    = d.country_code || '';
+  fields.country_name.value    = d.country_name || '';
+  fields.call_sign.value       = d.call_sign || '';
+  fields.ship_type.value       = d.ship_type || '';
+  fields.gross_tonnage.value   = formatNumber(d.gross_tonnage, 'gross_tonnage');
+  fields.dwt.value             = formatNumber(d.dwt, 'dwt');
+  fields.loa.value             = formatNumber(d.loa, 'loa');
+  fields.beam.value            = formatNumber(d.beam, 'beam');
+  fields.hatch_count.value     = formatNumber(d.hatch_count, 'hatch_count');
+  fields.horsepower.value      = formatNumber(d.horsepower, 'horsepower');
+  fields.draft.value           = formatNumber(d.draft, 'draft');
+  fields.cntr_bulk_type.value  = d.cntr_bulk_type || '';
+  fields.max_hatch.value       = d.max_hatch || '';
+  fields.bay_to.value          = d.bay_to || '';
+  fields.row_from.value        = d.row_from || '';
+  fields.row_to.value          = d.row_to || '';
+  fields.rowd_from.value       = d.rowd_from || '';
+  fields.rowd_to.value         = d.rowd_to || '';
+  fields.tierh_from.value      = d.tierh_from || '';
+  fields.tierh_to.value        = d.tierh_to || '';
+  fields.tierd_from.value      = d.tierd_from || '';
+  fields.tierd_to.value        = d.tierd_to || '';
+  fields.crane_count.value     = d.crane_count || '';
+  fields.remark1.value         = d.remark1 || '';
+  fields.remark2.value         = d.remark2 || '';
+  fields.remark3.value         = d.remark3 || '';
+
+  clearAllErrors();
+}
+
+function clearForm(keepCode) {
+  const savedCode = fields.vessel_code.value;
+  Object.values(fields).forEach(el => {
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  if (keepCode) fields.vessel_code.value = savedCode;
+  clearAllErrors();
+}
+
+function getFormData() {
+  return {
+    vessel_code:     fields.vessel_code.value.toUpperCase().trim(),
+    vessel_name_eng: fields.vessel_name_eng.value.trim(),
+    vessel_name_kor: fields.vessel_name_kor.value.trim(),
+    line_code:       fields.line_code.value.toUpperCase().trim(),
+    country_code:    fields.country_code.value.toUpperCase().trim(),
+    call_sign:       fields.call_sign.value.trim(),
+    ship_type:       fields.ship_type.value.trim(),
+    gross_tonnage:   fields.gross_tonnage.value.replace(/,/g, ''),
+    dwt:             fields.dwt.value.replace(/,/g, ''),
+    loa:             fields.loa.value.replace(/,/g, ''),
+    beam:            fields.beam.value.replace(/,/g, ''),
+    hatch_count:     fields.hatch_count.value.replace(/,/g, ''),
+    horsepower:      fields.horsepower.value.replace(/,/g, ''),
+    draft:           fields.draft.value.replace(/,/g, ''),
+    cntr_bulk_type:  fields.cntr_bulk_type.value,
+    max_hatch:       fields.max_hatch.value.trim(),
+    bay_to:          fields.bay_to.value.trim(),
+    row_from:        fields.row_from.value.trim(),
+    row_to:          fields.row_to.value.trim(),
+    rowd_from:       fields.rowd_from.value.trim(),
+    rowd_to:         fields.rowd_to.value.trim(),
+    tierh_from:      fields.tierh_from.value.trim(),
+    tierh_to:        fields.tierh_to.value.trim(),
+    tierd_from:      fields.tierd_from.value.trim(),
+    tierd_to:        fields.tierd_to.value.trim(),
+    crane_count:     fields.crane_count.value.trim(),
+    remark1:         fields.remark1.value.trim(),
+    remark2:         fields.remark2.value.trim(),
+    remark3:         fields.remark3.value.trim(),
+    input_user:      'SYSTEM'
+  };
+}
+
+// ============================================================
+// 유효성 검사
+// ============================================================
+function validate() {
+  clearAllErrors();
+  let ok = true;
+
+  if (!fields.vessel_code.value.trim()) {
+    markFieldError(fields.vessel_code, '모선코드를 입력하십시오.');
+    fields.vessel_code.focus();
+    return false;
+  }
+  if (!fields.vessel_name_eng.value.trim()) {
+    markFieldError(fields.vessel_name_eng, '모선명(영문)을 입력하십시오.');
+    if (ok) { fields.vessel_name_eng.focus(); ok = false; }
+  }
+  if (!fields.call_sign.value.trim()) {
+    markFieldError(fields.call_sign, '호출부호를 입력하십시오.');
+    if (ok) { fields.call_sign.focus(); ok = false; }
+  }
+
+  if (!ok) showMsg('필수 입력항목을 확인하십시오.');
+  return ok;
+}
+
+function markFieldError(el, msg) {
+  el.classList.add('error');
+  el.title = msg;
+  showMsg(msg);
+}
+
+function markFieldOk(el) {
+  el.classList.remove('error');
+  el.title = '';
+}
+
+function clearAllErrors() {
+  Object.values(fields).forEach(el => {
+    el.classList.remove('error');
+    el.title = '';
+  });
+}
+
+// ============================================================
+// API 호출
+// ============================================================
+async function api(method, url, body) {
+  try {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(url, opts);
+    return await res.json();
+  } catch (err) {
+    console.error('API 오류:', err);
+    return { success: false, message: '서버 연결 오류: ' + err.message };
+  }
+}
+
+// ============================================================
+// 유틸
+// ============================================================
+function showMsg(msg) {
+  $('status-msg').textContent = msg;
+}
+
+function esc(v) {
+  if (v == null) return '';
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function fmtGross(v) {
+  if (v == null || v === '') return '';
+  const n = parseFloat(v);
+  return isNaN(n) ? v : n.toLocaleString('ko-KR');
+}
+
+function formatNumber(val, fieldName) {
+  if (val === null || val === undefined || val === '') return '';
+  const raw = parseFloat(String(val).replace(/,/g, ''));
+  if (isNaN(raw)) return '';
+
+  // 소수점 필드
+  if (['loa','beam','horsepower','draft'].includes(fieldName)) {
+    return raw.toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+  return raw.toLocaleString('ko-KR');
+}
+
+// 모달 확인 대화상자
+function confirm(msg) {
+  return new Promise((resolve) => {
+    $('modal-confirm-msg').textContent = msg;
+    $('modal-confirm').classList.add('show');
+
+    const yes = $('modal-yes');
+    const no = $('modal-no');
+
+    function cleanup() {
+      $('modal-confirm').classList.remove('show');
+      yes.removeEventListener('click', onYes);
+      no.removeEventListener('click', onNo);
+    }
+    function onYes() { cleanup(); resolve(true); }
+    function onNo()  { cleanup(); resolve(false); }
+
+    yes.addEventListener('click', onYes);
+    no.addEventListener('click', onNo);
+  });
+}
+
+// ============================================================
+// 실행
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  // 초기 목록 조회
+  loadGrid();
+});
+이제 DB 테이블 생성 SQL도 만들어 드릴게요.
+
+Write create_table.sql
+60 lines
+-- ============================================================
+-- 모선코드 등록 테이블 (t_vessel_c)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `t_vessel_c` (
+  `vessel_code`      VARCHAR(4)    NOT NULL        COMMENT '모선코드 (PK)',
+  `vessel_name_eng`  VARCHAR(100)  NOT NULL        COMMENT '모선명(영문)',
+  `vessel_name_kor`  VARCHAR(100)  DEFAULT NULL    COMMENT '모선명(한글)',
+  `line_code`        VARCHAR(3)    DEFAULT NULL    COMMENT 'LINE코드',
+  `country_code`     VARCHAR(2)    DEFAULT NULL    COMMENT '국가코드',
+  `call_sign`        VARCHAR(20)   DEFAULT NULL    COMMENT '호출부호',
+  `ship_type`        VARCHAR(20)   DEFAULT NULL    COMMENT '선박유형',
+  `gross_tonnage`    DECIMAL(12,0) DEFAULT NULL    COMMENT '총톤수',
+  `dwt`              DECIMAL(12,0) DEFAULT NULL    COMMENT '재화중량톤(DWT)',
+  `loa`              DECIMAL(8,1)  DEFAULT NULL    COMMENT '전장(LOA)',
+  `beam`             DECIMAL(8,1)  DEFAULT NULL    COMMENT '전폭',
+  `hatch_count`      DECIMAL(8,0)  DEFAULT NULL    COMMENT '창구개수',
+  `horsepower`       DECIMAL(10,1) DEFAULT NULL    COMMENT '일공마력수',
+  `draft`            DECIMAL(6,1)  DEFAULT NULL    COMMENT '흘수기준',
+  `max_hatch`        VARCHAR(5)    DEFAULT NULL    COMMENT '화물 MAX HATCH',
+  `bay_to`           VARCHAR(3)    DEFAULT NULL    COMMENT '화물 MAX BAY',
+  `row_from`         VARCHAR(3)    DEFAULT NULL    COMMENT '화물 ROW FROM',
+  `row_to`           VARCHAR(3)    DEFAULT NULL    COMMENT '화물 ROW TO',
+  `rowd_from`        VARCHAR(3)    DEFAULT NULL    COMMENT '화물 ROW DECK FROM',
+  `rowd_to`          VARCHAR(3)    DEFAULT NULL    COMMENT '화물 ROW DECK TO',
+  `tierh_from`       VARCHAR(3)    DEFAULT NULL    COMMENT 'TIER HOLD FROM',
+  `tierh_to`         VARCHAR(3)    DEFAULT NULL    COMMENT 'TIER HOLD TO',
+  `tierd_from`       VARCHAR(3)    DEFAULT NULL    COMMENT 'TIER DECK FROM',
+  `tierd_to`         VARCHAR(3)    DEFAULT NULL    COMMENT 'TIER DECK TO',
+  `crane_count`      VARCHAR(5)    DEFAULT NULL    COMMENT 'CRANE 수',
+  `cntr_bulk_type`   VARCHAR(1)    DEFAULT NULL    COMMENT 'CNTR/BULK 구분 (C/B/G)',
+  `remark1`          VARCHAR(100)  DEFAULT NULL    COMMENT 'REMARK 1',
+  `remark2`          VARCHAR(100)  DEFAULT NULL    COMMENT 'REMARK 2',
+  `remark3`          VARCHAR(100)  DEFAULT NULL    COMMENT 'REMARK 3',
+  `input_program`    VARCHAR(30)   DEFAULT NULL    COMMENT '입력프로그램',
+  `input_user`       VARCHAR(20)   DEFAULT NULL    COMMENT '입력자사번',
+  `input_datetime`   VARCHAR(12)   DEFAULT NULL    COMMENT '입력일시(yyyymmddHHmm)',
+  `update_program`   VARCHAR(30)   DEFAULT NULL    COMMENT '수정프로그램',
+  `update_user`      VARCHAR(20)   DEFAULT NULL    COMMENT '수정자사번',
+  `update_datetime`  VARCHAR(12)   DEFAULT NULL    COMMENT '수정일시(yyyymmddHHmm)',
+  PRIMARY KEY (`vessel_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='모선코드 마스터';
+
+-- ============================================================
+-- LINE코드 테이블 (참조용 - 이미 있으면 수정 불필요)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `t_line_c` (
+  `line_code`  VARCHAR(3)   NOT NULL  COMMENT 'LINE코드 (PK)',
+  `line_name`  VARCHAR(50)  DEFAULT NULL COMMENT 'LINE명',
+  PRIMARY KEY (`line_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LINE코드 마스터';
+
+-- ============================================================
+-- 국가코드 테이블 (참조용 - 이미 있으면 수정 불필요)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `t_country_c` (
+  `country_code`  VARCHAR(2)   NOT NULL  COMMENT '국가코드 (PK)',
+  `country_name`  VARCHAR(50)  DEFAULT NULL COMMENT '국가명',
+  PRIMARY KEY (`country_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='국가코드 마스터';
+기존 main.js는 비어있으니 삭제하고, 최종 구조를 확인할게요.
+
+Bash 생성된 파일 목록 확인
+IN
+find "D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/" -type f | sort
+
+OUT
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/FETCH_HEAD
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/HEAD
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/config
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/description
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/applypatch-msg.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/commit-msg.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/fsmonitor-watchman.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/post-update.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/pre-applypatch.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/pre-commit.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/pre-merge-commit.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/pre-push.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/pre-rebase.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/pre-receive.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/prepare-commit-msg.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/push-to-checkout.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/sendemail-validate.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/hooks/update.sample
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/.git/info/exclude
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/config/database.js
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/controllers/vesselController.js
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/main.js
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/package.json
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/public/css/style.css
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/public/index.html
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/public/js/app.js
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/routes/vessel.js
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/server.js
+D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/sql/create_table.sql
+모든 파일이 생성됐습니다. 완성된 구조를 정리해 드릴게요.
+
+생성된 파일 구조
+
+prc_vesselci/
+├── package.json              ← 패키지 설정 (express, mysql2, cors)
+├── server.js                 ← Express 서버 진입점 (포트 3000)
+├── config/
+│   └── database.js           ← MySQL 연결풀 설정
+├── controllers/
+│   └── vesselController.js   ← CRUD 비즈니스 로직
+├── routes/
+│   └── vessel.js             ← API 라우트 정의
+├── public/
+│   ├── index.html            ← 메인 화면 (VBA 폼 재현)
+│   ├── css/style.css         ← 스타일 (윈도우 클래식 느낌)
+│   └── js/app.js             ← 프론트엔드 로직
+└── sql/
+    └── create_table.sql      ← DB 테이블 생성 스크립트
+API 엔드포인트
+메서드	URL	기능
+GET	/api/vessels	목록 조회
+GET	/api/vessels/:code	단건 조회
+POST	/api/vessels	신규 등록
+PUT	/api/vessels/:code	수정
+DELETE	/api/vessels/:code	삭제
+GET	/api/vessels/line/:code	LINE코드 검증
+GET	/api/vessels/country/:code	국가코드 검증
+단축키 (VBA와 동일)
+키	기능
+F3	저장
+F6	조회
+F8	삭제
+F9	추가
+ESC	초기화
+실행 방법
+DB 설정 후:
+
+
+cd prc_vesselci
+npm install
+npm start
+[config/database.js](D:/002. 개발/004. 개발중 소스/002. mpoms/prc_vesselci/config/database.js)에서 host, user, password, database 값만 설정하시면 됩니다.
+
+방금 개발한것을 이전에 개발한 intranet 아이디와 연동해서 아이디별로 권한이 있는 경우에만 접속하는걸로 할려면 어떻게 해야되나
+먼저 이전에 개발된 인트라넷 프로젝트를 찾아볼게요.
+
+Bash 개발 소스 디렉토리 목록 확인
+IN
+ls "D:/002. 개발/004. 개발중 소스/"
+
+OUT
+001. intranet
+002. mpoms
+Git
+php
+Bash 인트라넷 프로젝트 파일 목록 확인
+IN
+find "D:/002. 개발/004. 개발중 소스/001. intranet/" -type f | sort
+
+OUT
+D:/002. 개발/004. 개발중 소스/001. intranet/.claude/settings.local.json
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/COMMIT_EDITMSG
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/FETCH_HEAD
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/HEAD
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/config
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/description
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/applypatch-msg.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/commit-msg.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/fsmonitor-watchman.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/post-update.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/pre-applypatch.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/pre-commit.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/pre-merge-commit.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/pre-push.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/pre-rebase.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/pre-receive.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/prepare-commit-msg.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/push-to-checkout.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/sendemail-validate.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/hooks/update.sample
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/index
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/info/exclude
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/logs/HEAD
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/logs/refs/heads/main
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/logs/refs/remotes/origin/HEAD
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/logs/refs/remotes/origin/main
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/0d/10f8e650e6d55c255cba6598aed06f1d03e16b
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/27/7f793899f4cf3454b1e46e57d146b393cc52e4
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/27/8b890cd2333139c995a129b725bd107223be15
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/28/76d54427b1bf794a6f8c1e5b6635730fb441b7
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/2d/137d353b453217b6c801369a8818a137378c55
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/32/d5d8e4efd2ae8f15e0f30d6129b6c8013b88ae
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/3f/f210d6da9c42ca7718f299546d4fc93de70e44
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/50/24217d828ad2c4b2f4773d8ddbc75979b5241f
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/59/5fec74ece64f82d7540bfd96274af828c3f214
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/5a/ed8ad73484adfc76be9ec129d63718e1d44746
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/5d/e6e1e400690524de8a488c1bc287bc229ad89a
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/74/ca3055a9ca8741d3aa772c2698c4cf5d5918a2
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/7e/67d9d899d5c2739daa7259aec95f4fee5edb53
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/7f/7e7209aaa1192629fedf607c001ec7f0710c53
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/88/223b6bc21abaa4b0f36002119d3a894d957ef0
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/8f/f962be47dbb598009761c54ff027793611e0b0
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/d0/90b8fd0bf16ffd786d1a514d218a7b80b3036a
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/e0/323a07020a48279eeab0ca432abe690e69ec6b
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/e4/077f41d720aa4abfc0b633e95caa7af7326601
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/e6/0ab3aec0c9640fce131ca2b4a17229328b7e1e
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/f3/0d859451fcd2a6544ae5fb0f23ffd462508ec6
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/f3/708c2490c0b94818eb6cb35121a5e34ac0278e
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/fb/47dac718568464e17dc5930e1680d90dc36807
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/fb/b1dfc08929c69b4913e98a182f0fa36438369c
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/objects/fc/57fd777db907235e1bd3643910add21703e2fa
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/refs/heads/main
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/refs/remotes/origin/HEAD
+D:/002. 개발/004. 개발중 소스/001. intranet/.git/refs/remotes/origin/main
+D:/002. 개발/004. 개발중 소스/001. intranet/config/db.js
+D:/002. 개발/004. 개발중 소스/001. intranet/lib/functions.js
+D:/002. 개발/004. 개발중 소스/001. intranet/package.json
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/admin.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/api/resetPw.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/api/users.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/auth.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/changePw.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/main.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/setup.js
+D:/002. 개발/004. 개발중 소스/001. intranet/server.js
+D:/002. 개발/004. 개발중 소스/001. intranet/views/admin.ejs
+D:/002. 개발/004. 개발중 소스/001. intranet/views/change_password.ejs
+D:/002. 개발/004. 개발중 소스/001. intranet/views/login.ejs
+D:/002. 개발/004. 개발중 소스/001. intranet/views/main.ejs
+D:/002. 개발/004. 개발중 소스/001. intranet/views/setup.ejs
+Read server.js
+Read auth.js
+Read functions.js
+Read db.js
+Read main.js
+Read package.json
+Read admin.js
+Read main.ejs
+인트라넷 구조 파악 완료. 세션 방식(express-session)을 사용하고 있으니, 인트라넷 서버에 prc_vesselci를 통합하는 방식이 가장 깔끔합니다.
+
+구현할 내용:
+
+인트라넷 DB에 프로그램 권한 테이블 추가
+인트라넷 서버에 vesselci API/페이지 라우트 통합
+인트라넷 메인 메뉴에 MPOMS 링크 추가
+Bash 인트라넷에 mpoms 관련 디렉토리 생성
+IN
+mkdir -p "D:/002. 개발/004. 개발중 소스/001. intranet/routes/mpoms" && mkdir -p "D:/002. 개발/004. 개발중 소스/001. intranet/views/mpoms" && mkdir -p "D:/002. 개발/004. 개발중 소스/001. intranet/config" && mkdir -p "D:/002. 개발/004. 개발중 소스/001. intranet/sql"
+
+OUT
+(Bash completed with no output)
+1. 권한 테이블 SQL
+
+Write add_prog_auth.sql
+21 lines
+-- ============================================================
+-- 프로그램별 사용자 권한 테이블
+-- ============================================================
+-- auth_level:
+--   1 = 조회만 가능
+--   2 = 조회 + 등록/수정 가능
+--   3 = 조회 + 등록/수정 + 삭제 가능 (관리자급)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `t_prog_auth` (
+  `id`          INT           NOT NULL AUTO_INCREMENT,
+  `prog_id`     VARCHAR(30)   NOT NULL  COMMENT '프로그램 ID (ex: prc_vesselci)',
+  `emp_no`      VARCHAR(20)   NOT NULL  COMMENT '사번 (users.emp_no 참조)',
+  `auth_level`  TINYINT       NOT NULL DEFAULT 1 COMMENT '권한레벨: 1=조회, 2=등록/수정, 3=삭제포함',
+  `reg_date`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_prog_emp` (`prog_id`, `emp_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='프로그램별 사용자 권한';
+
+-- 예시 데이터 (admin 계정에 모든 권한 부여)
+-- INSERT INTO t_prog_auth (prog_id, emp_no, auth_level) VALUES ('prc_vesselci', '0001', 3);
+2. 인트라넷 functions.js - requireProgAuth 미들웨어 추가
+
+Read functions.js
+Edit functions.js
+Added 82 lines
+CommonJS 모듈 힌트는 무시해도 됩니다 — 기존 코드가 모두 CommonJS(require)를 쓰고 있으므로 그대로 유지합니다.
+
+계속해서 나머지 파일들을 만들게요.
+
+3. mpoms DB 연결 설정
+
+Write mpoms_db.js
+17 lines
+const mysql = require('mysql2/promise');
+
+// mpoms DB 설정 - 실제 환경에 맞게 수정
+const pool = mysql.createPool({
+  host: 'localhost',
+  port: 3306,
+  user: 'root',
+  password: '',
+  database: 'mpoms',
+  charset: 'utf8mb4',
+  timezone: '+09:00',
+  waitForConnections: true,
+  connectionLimit: 10
+});
+
+module.exports = pool;
+4. vesselci 라우트 (페이지 + API 통합)
+
+Write vesselci.js
+234 lines
+'use strict';
+
+const express = require('express');
+const router = express.Router();
+const db = require('../../config/mpoms_db');
+const { requireProgAuth } = require('../../lib/functions');
+
+const PROG_ID = 'prc_vesselci';
+
+// ─── 페이지 ───────────────────────────────────────────────────────────────────
+
+// 조회 권한(1) 이상이면 화면 진입 허용
+router.get('/', requireProgAuth(PROG_ID, 1), function(req, res) {
+  res.render('mpoms/vesselci', {
+    user: req.session.user,
+    authLevel: req.authLevel   // 화면에서 버튼 표시 제어에 활용
+  });
+});
+
+// ─── API ─────────────────────────────────────────────────────────────────────
+
+// 목록 조회 (조회권한 1 이상)
+router.get('/api/list', requireProgAuth(PROG_ID, 1), async function(req, res) {
+  try {
+    const [rows] = await db.query(`
+      SELECT vessel_code, vessel_name_eng, country_code,
+             line_code, call_sign, gross_tonnage
+      FROM t_vessel_c
+      ORDER BY vessel_code
+    `);
+    res.json({ success: true, data: rows });
+  } catch (e) {
+    res.json({ success: false, message: '조회 오류: ' + e.message });
+  }
+});
+
+// 단건 조회 (조회권한 1 이상)
+router.get('/api/:code', requireProgAuth(PROG_ID, 1), async function(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT vessel_code, vessel_name_eng, vessel_name_kor,
+              line_code, country_code, call_sign, ship_type,
+              gross_tonnage, dwt, loa, beam, hatch_count,
+              horsepower, draft, max_hatch, bay_to,
+              row_from, row_to, rowd_from, rowd_to,
+              tierh_from, tierh_to, tierd_from, tierd_to,
+              crane_count, cntr_bulk_type,
+              remark1, remark2, remark3
+       FROM t_vessel_c WHERE vessel_code = ?`,
+      [req.params.code.toUpperCase()]
+    );
+    if (rows.length === 0) return res.json({ success: false, message: '자료가 없습니다.' });
+    res.json({ success: true, data: rows[0] });
+  } catch (e) {
+    res.json({ success: false, message: '조회 오류: ' + e.message });
+  }
+});
+
+// LINE코드 조회 (조회권한 1 이상)
+router.get('/api/meta/line/:code', requireProgAuth(PROG_ID, 1), async function(req, res) {
+  try {
+    const [rows] = await db.query(
+      'SELECT line_code, line_name FROM t_line_c WHERE line_code = ?',
+      [req.params.code.toUpperCase()]
+    );
+    if (rows.length === 0) return res.json({ success: false, message: 'LINE코드를 확인하십시오.' });
+    res.json({ success: true, data: rows[0] });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+// 국가코드 조회 (조회권한 1 이상)
+router.get('/api/meta/country/:code', requireProgAuth(PROG_ID, 1), async function(req, res) {
+  try {
+    const [rows] = await db.query(
+      'SELECT country_code, country_name FROM t_country_c WHERE country_code = ?',
+      [req.params.code.toUpperCase()]
+    );
+    if (rows.length === 0) return res.json({ success: false, message: '국가코드를 확인 하십시오.' });
+    res.json({ success: true, data: rows[0] });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+// 등록 (등록/수정 권한 2 이상)
+router.post('/api', requireProgAuth(PROG_ID, 2), async function(req, res) {
+  try {
+    const d = req.body;
+    const now = getNow();
+    const empNo = req.session.user.empNo;
+
+    if (!d.vessel_code || !d.vessel_code.trim())
+      return res.json({ success: false, message: '모선코드를 입력하십시오.' });
+    if (!d.vessel_name_eng || !d.vessel_name_eng.trim())
+      return res.json({ success: false, message: '모선명을 입력하십시오.' });
+    if (!d.call_sign || !d.call_sign.trim())
+      return res.json({ success: false, message: '호출부호를 입력하십시오.' });
+
+    await db.query(`
+      INSERT INTO t_vessel_c (
+        vessel_code, vessel_name_eng, vessel_name_kor,
+        line_code, country_code, call_sign, ship_type,
+        gross_tonnage, dwt, loa, beam, hatch_count,
+        horsepower, draft, max_hatch, bay_to,
+        row_from, row_to, rowd_from, rowd_to,
+        tierh_from, tierh_to, tierd_from, tierd_to,
+        crane_count, cntr_bulk_type,
+        remark1, remark2, remark3,
+        input_program, input_user, input_datetime
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      buildValues(d, empNo, now)
+    );
+    res.json({ success: true, message: '등록되었습니다.' });
+  } catch (e) {
+    if (e.code === 'ER_DUP_ENTRY')
+      return res.json({ success: false, message: '이미 등록된 모선코드입니다.' });
+    res.json({ success: false, message: '입력오류입니다. ' + e.message });
+  }
+});
+
+// 수정 (등록/수정 권한 2 이상)
+router.put('/api/:code', requireProgAuth(PROG_ID, 2), async function(req, res) {
+  try {
+    const d = req.body;
+    const now = getNow();
+    const empNo = req.session.user.empNo;
+
+    if (!d.vessel_name_eng || !d.vessel_name_eng.trim())
+      return res.json({ success: false, message: '모선명을 입력하십시오.' });
+    if (!d.call_sign || !d.call_sign.trim())
+      return res.json({ success: false, message: '호출부호를 입력하십시오.' });
+
+    const [result] = await db.query(`
+      UPDATE t_vessel_c SET
+        vessel_name_eng=?, vessel_name_kor=?,
+        line_code=?, country_code=?, call_sign=?, ship_type=?,
+        gross_tonnage=?, dwt=?, loa=?, beam=?, hatch_count=?,
+        horsepower=?, draft=?, max_hatch=?, bay_to=?,
+        row_from=?, row_to=?, rowd_from=?, rowd_to=?,
+        tierh_from=?, tierh_to=?, tierd_from=?, tierd_to=?,
+        crane_count=?, cntr_bulk_type=?,
+        remark1=?, remark2=?, remark3=?,
+        update_program=?, update_user=?, update_datetime=?
+      WHERE vessel_code=?`,
+      buildUpdateValues(d, empNo, now, req.params.code.toUpperCase())
+    );
+    if (result.affectedRows === 0)
+      return res.json({ success: false, message: '수정할 자료가 없습니다.' });
+    res.json({ success: true, message: '수정되었습니다.' });
+  } catch (e) {
+    res.json({ success: false, message: '수정오류입니다. ' + e.message });
+  }
+});
+
+// 삭제 (삭제 권한 3 이상)
+router.delete('/api/:code', requireProgAuth(PROG_ID, 3), async function(req, res) {
+  try {
+    const [result] = await db.query(
+      'DELETE FROM t_vessel_c WHERE vessel_code = ?',
+      [req.params.code.toUpperCase()]
+    );
+    if (result.affectedRows === 0)
+      return res.json({ success: false, message: '삭제할 자료가 없습니다.' });
+    res.json({ success: true, message: '삭제되었습니다.' });
+  } catch (e) {
+    res.json({ success: false, message: '삭제오류입니다. ' + e.message });
+  }
+});
+
+// ─── 유틸 ─────────────────────────────────────────────────────────────────────
+
+function getNow() {
+  const d = new Date();
+  const pad = (n, len) => String(n).padStart(len || 2, '0');
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+
+function parseNum(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = parseFloat(String(v).replace(/,/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+function padZ(v) {
+  if (v === null || v === undefined || v === '') return '';
+  return String(v).padStart(2, '0');
+}
+
+function buildValues(d, empNo, now) {
+  return [
+    (d.vessel_code || '').toUpperCase().trim(),
+    (d.vessel_name_eng || '').trim(),
+    (d.vessel_name_kor || '').trim(),
+    (d.line_code || '').toUpperCase().trim(),
+    (d.country_code || '').toUpperCase().trim(),
+    (d.call_sign || '').trim(),
+    (d.ship_type || '').trim(),
+    parseNum(d.gross_tonnage), parseNum(d.dwt),
+    parseNum(d.loa), parseNum(d.beam),
+    parseNum(d.hatch_count), parseNum(d.horsepower), parseNum(d.draft),
+    (d.max_hatch || '').trim(), padZ(d.bay_to),
+    padZ(d.row_from), padZ(d.row_to), padZ(d.rowd_from), padZ(d.rowd_to),
+    padZ(d.tierh_from), padZ(d.tierh_to), padZ(d.tierd_from), padZ(d.tierd_to),
+    (d.crane_count || '').trim(), (d.cntr_bulk_type || '').trim(),
+    (d.remark1 || '').trim(), (d.remark2 || '').trim(), (d.remark3 || '').trim(),
+    PROG_ID, empNo, now
+  ];
+}
+
+function buildUpdateValues(d, empNo, now, code) {
+  return [
+    (d.vessel_name_eng || '').trim(),
+    (d.vessel_name_kor || '').trim(),
+    (d.line_code || '').toUpperCase().trim(),
+    (d.country_code || '').toUpperCase().trim(),
+    (d.call_sign || '').trim(),
+    (d.ship_type || '').trim(),
+    parseNum(d.gross_tonnage), parseNum(d.dwt),
+    parseNum(d.loa), parseNum(d.beam),
+    parseNum(d.hatch_count), parseNum(d.horsepower), parseNum(d.draft),
+    (d.max_hatch || '').trim(), padZ(d.bay_to),
+    padZ(d.row_from), padZ(d.row_to), padZ(d.rowd_from), padZ(d.rowd_to),
+    padZ(d.tierh_from), padZ(d.tierh_to), padZ(d.tierd_from), padZ(d.tierd_to),
+    (d.crane_count || '').trim(), (d.cntr_bulk_type || '').trim(),
+    (d.remark1 || '').trim(), (d.remark2 || '').trim(), (d.remark3 || '').trim(),
+    PROG_ID, empNo, now,
+    code
+  ];
+}
+
+module.exports = router;
+5. vesselci EJS 뷰 (인트라넷 세션 정보 활용)
+
+Write vesselci.ejs
+372 lines
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>코드-모선코드등록</title>
+  <style>
+    /* ── 리셋 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+      font-size: 12px;
+      background: #f0f0f0;
+      color: #222;
+    }
+
+    /* ── 상단 앱바 ── */
+    .app-bar {
+      background: #1a1f36;
+      color: #fff;
+      padding: 0 12px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .app-bar .title { font-weight: bold; }
+    .app-bar .user-info { font-size: 11px; color: rgba(255,255,255,0.65); display: flex; align-items: center; gap: 12px; }
+    .app-bar a { color: rgba(255,255,255,0.7); font-size: 11px; text-decoration: none; }
+    .app-bar a:hover { color: #fff; text-decoration: underline; }
+
+    /* ── 툴바 ── */
+    .toolbar {
+      background: #d4d0c8;
+      padding: 4px 6px;
+      border-bottom: 1px solid #808080;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .toolbar button {
+      width: 72px; height: 28px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid #808080;
+      background: linear-gradient(to bottom, #fff, #d4d0c8);
+      border-radius: 2px;
+    }
+
+    .toolbar button:hover { background: linear-gradient(to bottom, #e8e4dc, #bab5ad); }
+    .toolbar button:disabled { color: #999; cursor: default; background: #d4d0c8; }
+    .toolbar .sep { width: 1px; height: 24px; background: #808080; margin: 0 2px; }
+
+    /* ── 폼 ── */
+    .main-container { padding: 6px; display: flex; flex-direction: column; gap: 6px; }
+
+    .section { background: #fff; border: 1px solid #808080; border-radius: 2px; }
+    .section-title { background: #d4d0c8; padding: 3px 8px; font-weight: bold; font-size: 11px; border-bottom: 1px solid #808080; }
+
+    .form-area {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px 8px;
+    }
+
+    .form-row { display: flex; align-items: center; gap: 4px; }
+    .form-row.full-width { grid-column: 1 / -1; }
+    .form-row.two-col    { grid-column: span 2; }
+
+    label { min-width: 90px; text-align: right; font-size: 11px; white-space: nowrap; }
+
+    input[type="text"], select {
+      height: 22px; border: 1px solid #7f9db9;
+      padding: 1px 4px; font-size: 12px; font-family: inherit;
+      background: #fff; outline: none;
+    }
+
+    input[type="text"]:focus, select:focus { border-color: #0055cc; background: #ffffcc; }
+    input.key-field  { text-transform: uppercase; font-weight: bold; }
+    input.ro-field   { background: #f0f0f0; color: #555; }
+    input.num-field  { text-align: right; }
+    input.error      { background: #ffff99; border-color: #cc0000; }
+
+    .range-row { display: flex; align-items: center; gap: 4px; }
+    .range-sep { font-size: 11px; }
+
+    .help-btn {
+      height: 22px; padding: 0 6px; font-size: 11px;
+      cursor: pointer; border: 1px solid #808080; background: #e8e4dc;
+    }
+    .help-btn:hover { background: #d4d0c8; }
+
+    .divider { grid-column: 1 / -1; height: 1px; background: #c0c0c0; margin: 2px 0; }
+
+    /* ── 그리드 ── */
+    .grid-area { background: #fff; border: 1px solid #808080; }
+    .grid-area table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .grid-area th {
+      background: #d4d0c8; border: 1px solid #808080;
+      padding: 4px 6px; text-align: center; font-weight: bold;
+      cursor: pointer; white-space: nowrap; user-select: none;
+    }
+    .grid-area th:hover { background: #c0bcb4; }
+    .grid-area th.sorted-asc::after  { content: ' ▲'; font-size: 10px; }
+    .grid-area th.sorted-desc::after { content: ' ▼'; font-size: 10px; }
+    .grid-area td { border: 1px solid #c0c0c0; padding: 3px 6px; cursor: pointer; }
+    .grid-area tr:nth-child(even) td { background: #f5f5f5; }
+    .grid-area tr:hover td { background: #cce5ff; }
+    .grid-area tr.selected td { background: #0078d7; color: #fff; }
+    .grid-area td.center { text-align: center; }
+    .grid-area td.right  { text-align: right; }
+
+    /* ── 상태바 ── */
+    .status-bar {
+      background: #d4d0c8; border-top: 1px solid #808080;
+      padding: 3px 8px; display: flex; align-items: center; gap: 8px; font-size: 11px;
+    }
+    .status-msg { flex: 1; color: #cc0000; font-weight: bold; }
+    .status-right { color: #333; border-left: 1px solid #808080; padding-left: 8px; }
+
+    /* ── 권한 배지 ── */
+    .auth-badge {
+      font-size: 10px; padding: 1px 6px; border-radius: 8px;
+      font-weight: bold; border: 1px solid;
+    }
+    .auth-1 { background: #e0f0e0; color: #2a7a2a; border-color: #2a7a2a; }
+    .auth-2 { background: #e0e8ff; color: #1a4acc; border-color: #1a4acc; }
+    .auth-3 { background: #fde8e8; color: #cc2222; border-color: #cc2222; }
+
+    /* ── 모달 ── */
+    .modal-overlay { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,.4); z-index:100; justify-content:center; align-items:center; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:#fff; border:2px solid #1a1f36; min-width:300px; border-radius:4px; box-shadow:4px 4px 12px rgba(0,0,0,.4); }
+    .modal-header { background:#1a1f36; color:#fff; padding:6px 12px; font-weight:bold; font-size:12px; }
+    .modal-body { padding:16px; font-size:13px; }
+    .modal-footer { padding:8px 12px; text-align:right; border-top:1px solid #ddd; display:flex; justify-content:flex-end; gap:6px; }
+    .modal-footer button { padding:4px 16px; font-size:12px; cursor:pointer; border:1px solid #808080; background:#d4d0c8; border-radius:2px; }
+    .modal-footer .btn-primary { background:#1a1f36; color:#fff; border-color:#000; }
+  </style>
+</head>
+<body>
+
+<!-- 앱바: 인트라넷 로그인 사용자 표시 -->
+<div class="app-bar">
+  <span class="title">코드 - 모선코드 등록</span>
+  <div class="user-info">
+    <% const authLabels = ['', '조회', '등록/수정', '삭제포함']; %>
+    <span class="auth-badge auth-<%= authLevel %>"><%= authLabels[authLevel] %></span>
+    <span><%= user.name %> (<%= user.empNo %>)</span>
+    <a href="/main">메인</a>
+    <a href="/logout">로그아웃</a>
+  </div>
+</div>
+
+<!-- 툴바 -->
+<div class="toolbar">
+  <button id="btn-exit"   title="메인으로(ESC)">메인</button>
+  <div class="sep"></div>
+  <button id="btn-search" title="조회(F6)">조회</button>
+  <% if (authLevel >= 2) { %>
+  <button id="btn-add"    title="추가(F9)">추가</button>
+  <button id="btn-save"   title="저장(F3)">저장</button>
+  <% } %>
+  <% if (authLevel >= 3) { %>
+  <button id="btn-delete" title="삭제(F8)">삭제</button>
+  <% } %>
+  <div class="sep"></div>
+  <button id="btn-clear"  title="초기화">초기화</button>
+</div>
+
+<!-- 입력 폼 -->
+<div class="main-container">
+  <div class="section">
+    <div class="section-title">모선 정보 입력</div>
+    <div class="form-area">
+
+      <div class="form-row">
+        <label>모선코드 *</label>
+        <input type="text" id="vessel_code" maxlength="4" class="key-field" style="width:70px">
+        <button class="help-btn" id="btn-code-help">코드검색</button>
+      </div>
+      <div class="form-row two-col">
+        <label>모선명(영문) *</label>
+        <input type="text" id="vessel_name_eng" maxlength="100" style="flex:1">
+      </div>
+
+      <div class="form-row">
+        <label>LINE코드</label>
+        <input type="text" id="line_code" maxlength="3" class="key-field" style="width:50px">
+        <button class="help-btn" id="btn-line-help">LINE</button>
+        <input type="text" id="line_name" maxlength="30" class="ro-field" style="width:110px" readonly>
+      </div>
+      <div class="form-row two-col">
+        <label>모선명(한글)</label>
+        <input type="text" id="vessel_name_kor" maxlength="100" style="flex:1">
+      </div>
+
+      <div class="form-row">
+        <label>국가코드</label>
+        <input type="text" id="country_code" maxlength="2" class="key-field" style="width:40px">
+        <button class="help-btn" id="btn-country-help">국가코드</button>
+        <input type="text" id="country_name" maxlength="30" class="ro-field" style="width:90px" readonly>
+      </div>
+      <div class="form-row">
+        <label>호출부호 *</label>
+        <input type="text" id="call_sign" maxlength="20" style="width:120px">
+      </div>
+      <div class="form-row">
+        <label>선박유형</label>
+        <input type="text" id="ship_type" maxlength="20" style="width:120px">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-row">
+        <label>총톤수</label>
+        <input type="text" id="gross_tonnage" maxlength="15" class="num-field" style="width:100px">
+      </div>
+      <div class="form-row">
+        <label>재화중량톤</label>
+        <input type="text" id="dwt" maxlength="15" class="num-field" style="width:100px">
+      </div>
+      <div class="form-row">
+        <label>전장</label>
+        <input type="text" id="loa" maxlength="10" class="num-field" style="width:90px">
+      </div>
+      <div class="form-row">
+        <label>전폭</label>
+        <input type="text" id="beam" maxlength="10" class="num-field" style="width:90px">
+      </div>
+
+      <div class="form-row">
+        <label>창구개수</label>
+        <input type="text" id="hatch_count" maxlength="10" class="num-field" style="width:90px">
+      </div>
+      <div class="form-row">
+        <label>일공마력수</label>
+        <input type="text" id="horsepower" maxlength="10" class="num-field" style="width:90px">
+      </div>
+      <div class="form-row">
+        <label>흘수기준</label>
+        <input type="text" id="draft" maxlength="8" class="num-field" style="width:80px">
+      </div>
+      <div class="form-row">
+        <label>CNTR/BULK구분</label>
+        <select id="cntr_bulk_type" style="width:90px">
+          <option value="">선택</option>
+          <option value="C">CNTR</option>
+          <option value="B">BULK</option>
+          <option value="G">일반</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-row">
+        <label>화물 MAX HATCH</label>
+        <input type="text" id="max_hatch" maxlength="5" class="num-field" style="width:60px">
+      </div>
+      <div class="form-row">
+        <label>화물 MAX BAY</label>
+        <input type="text" id="bay_to" maxlength="5" class="num-field" style="width:60px">
+      </div>
+      <div class="form-row">
+        <label>CRANE 수</label>
+        <input type="text" id="crane_count" maxlength="5" style="width:60px">
+      </div>
+
+      <div class="form-row">
+        <label>화물 ROW (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="row_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="row_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>화물 ROW DECK (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="rowd_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="rowd_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>TIER HOLD (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="tierh_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="tierh_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>TIER DECK (FR~TO)</label>
+        <div class="range-row">
+          <input type="text" id="tierd_from" maxlength="3" class="num-field" style="width:50px">
+          <span class="range-sep">~</span>
+          <input type="text" id="tierd_to" maxlength="3" class="num-field" style="width:50px">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-row full-width">
+        <label>REMARK 1</label>
+        <input type="text" id="remark1" maxlength="100" style="flex:1">
+      </div>
+      <div class="form-row full-width">
+        <label>REMARK 2</label>
+        <input type="text" id="remark2" maxlength="100" style="flex:1">
+      </div>
+      <div class="form-row full-width">
+        <label>REMARK 3</label>
+        <input type="text" id="remark3" maxlength="100" style="flex:1">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 그리드 -->
+  <div class="grid-area">
+    <table id="vessel-grid">
+      <thead>
+        <tr>
+          <th data-col="vessel_code"     style="width:80px">모선코드</th>
+          <th data-col="vessel_name_eng" style="width:280px">모선명 (영문)</th>
+          <th data-col="country_code"    style="width:70px">국가코드</th>
+          <th data-col="line_code"       style="width:70px">LINE</th>
+          <th data-col="call_sign"       style="width:100px">호출부호</th>
+          <th data-col="gross_tonnage"   style="width:100px">총 톤 수</th>
+        </tr>
+      </thead>
+      <tbody id="grid-body">
+        <tr><td colspan="6" style="text-align:center;padding:20px;color:#888">조회 버튼을 눌러 목록을 불러오세요.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 상태바 -->
+<div class="status-bar">
+  <span class="status-msg" id="status-msg">조회할 자료를 입력하십시오.</span>
+  <span class="status-right">prc_vesselci</span>
+  <span class="status-right" id="status-date"></span>
+</div>
+
+<!-- 확인 모달 -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal">
+    <div class="modal-header">확인</div>
+    <div class="modal-body" id="modal-confirm-msg"></div>
+    <div class="modal-footer">
+      <button id="modal-yes" class="btn-primary">예(Y)</button>
+      <button id="modal-no">아니오(N)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 서버에서 넘겨준 권한 레벨을 JS 변수로 주입
+const AUTH_LEVEL = <%= authLevel %>;
+const CURRENT_USER = '<%= user.empNo %>';
+</script>
+<script src="/mpoms/vesselci/app.js"></script>
+</body>
+</html>
+6. 프론트엔드 JS (API 경로를 인트라넷 경로로)
+
+Bash 인트라넷 정적 파일 경로 생성
+IN
+mkdir -p "D:/002. 개발/004. 개발중 소스/001. intranet/public/mpoms/vesselci"
+
+OUT
+(Bash completed with no output)
+Write app.js
+403 lines
+'use strict';
+
+// API 기본 경로 (인트라넷 서버 경로)
+const BASE = '/mpoms/vesselci';
+
+const MODE = { ADD: 'add', MODIFY: 'modify', READ: 'read' };
+let currentMode = MODE.READ;
+let isLoaded = false;
+let sortCol = '';
+let sortDir = 'asc';
+let gridData = [];
+
+const $ = (id) => document.getElementById(id);
+
+const F = {
+  vessel_code:    $('vessel_code'),
+  vessel_name_eng:$('vessel_name_eng'),
+  vessel_name_kor:$('vessel_name_kor'),
+  line_code:      $('line_code'),
+  line_name:      $('line_name'),
+  country_code:   $('country_code'),
+  country_name:   $('country_name'),
+  call_sign:      $('call_sign'),
+  ship_type:      $('ship_type'),
+  gross_tonnage:  $('gross_tonnage'),
+  dwt:            $('dwt'),
+  loa:            $('loa'),
+  beam:           $('beam'),
+  hatch_count:    $('hatch_count'),
+  horsepower:     $('horsepower'),
+  draft:          $('draft'),
+  cntr_bulk_type: $('cntr_bulk_type'),
+  max_hatch:      $('max_hatch'),
+  bay_to:         $('bay_to'),
+  row_from:       $('row_from'),
+  row_to:         $('row_to'),
+  rowd_from:      $('rowd_from'),
+  rowd_to:        $('rowd_to'),
+  tierh_from:     $('tierh_from'),
+  tierh_to:       $('tierh_to'),
+  tierd_from:     $('tierd_from'),
+  tierd_to:       $('tierd_to'),
+  crane_count:    $('crane_count'),
+  remark1:        $('remark1'),
+  remark2:        $('remark2'),
+  remark3:        $('remark3'),
+};
+
+// ── 초기화 ──────────────────────────────────────────────────────────────────
+
+function init() {
+  $('status-date').textContent = new Date().toLocaleDateString('ko-KR');
+
+  $('btn-exit').addEventListener('click', () => { location.href = '/main'; });
+  $('btn-search').addEventListener('click', handleSearch);
+  $('btn-clear').addEventListener('click', () => { clearForm(false); setMode(MODE.READ); });
+
+  // 권한에 따라 버튼 존재 여부가 EJS에서 제어되므로 null 체크 후 바인딩
+  if ($('btn-add'))    $('btn-add').addEventListener('click', handleAdd);
+  if ($('btn-save'))   $('btn-save').addEventListener('click', handleSave);
+  if ($('btn-delete')) $('btn-delete').addEventListener('click', handleDelete);
+
+  $('btn-code-help').addEventListener('click', () => showMsg('모선코드 검색 팝업을 연결하세요.'));
+  $('btn-line-help').addEventListener('click', () => showMsg('LINE코드 검색 팝업을 연결하세요.'));
+  $('btn-country-help').addEventListener('click', () => showMsg('국가코드 검색 팝업을 연결하세요.'));
+
+  F.vessel_code.addEventListener('input', () => { F.vessel_code.value = F.vessel_code.value.toUpperCase(); });
+  F.vessel_code.addEventListener('blur', onVesselCodeBlur);
+  F.line_code.addEventListener('input', () => { F.line_code.value = F.line_code.value.toUpperCase(); });
+  F.line_code.addEventListener('blur', onLineCodeBlur);
+  F.country_code.addEventListener('input', () => { F.country_code.value = F.country_code.value.toUpperCase(); });
+  F.country_code.addEventListener('blur', onCountryCodeBlur);
+
+  const numFields = ['gross_tonnage','dwt','loa','beam','hatch_count','horsepower','draft'];
+  numFields.forEach(name => {
+    F[name].addEventListener('focus', () => { F[name].value = F[name].value.replace(/,/g, ''); });
+    F[name].addEventListener('blur',  () => { F[name].value = fmtNum(F[name].value, name); });
+  });
+
+  document.addEventListener('keydown', onKeyDown);
+
+  document.querySelectorAll('#vessel-grid th').forEach(th => {
+    th.addEventListener('click', () => onHeaderClick(th.dataset.col));
+  });
+
+  // 조회 전용이면 폼 입력 비활성화
+  if (AUTH_LEVEL < 2) setFormReadOnly(true);
+
+  setMode(MODE.READ);
+  loadGrid();
+}
+
+// ── 읽기 전용 처리 ───────────────────────────────────────────────────────────
+
+function setFormReadOnly(flag) {
+  Object.values(F).forEach(el => {
+    if (el.tagName === 'INPUT' && !el.classList.contains('ro-field')) el.readOnly = flag;
+    if (el.tagName === 'SELECT') el.disabled = flag;
+  });
+}
+
+// ── 키보드 단축키 ────────────────────────────────────────────────────────────
+
+function onKeyDown(e) {
+  switch (e.key) {
+    case 'Escape': e.preventDefault(); clearForm(false); setMode(MODE.READ); break;
+    case 'F3':     e.preventDefault(); if (AUTH_LEVEL >= 2) handleSave();   break;
+    case 'F6':     e.preventDefault(); handleSearch(); break;
+    case 'F8':     e.preventDefault(); if (AUTH_LEVEL >= 3) handleDelete(); break;
+    case 'F9':     e.preventDefault(); if (AUTH_LEVEL >= 2) handleAdd();    break;
+  }
+}
+
+// ── 모드 설정 ────────────────────────────────────────────────────────────────
+
+function setMode(mode) {
+  currentMode = mode;
+  if ($('btn-delete')) $('btn-delete').disabled = !isLoaded;
+  const msgs = { [MODE.READ]: '조회할 자료를 입력하십시오.', [MODE.ADD]: '추가할 모선 정보를 입력 후 저장하십시오.', [MODE.MODIFY]: '수정할 내용을 입력 후 저장하십시오.' };
+  showMsg(msgs[mode] || '');
+}
+
+// ── 버튼 핸들러 ──────────────────────────────────────────────────────────────
+
+async function handleSearch() {
+  const code = F.vessel_code.value.trim();
+  if (!code) { showMsg('모선코드를 입력하십시오.'); F.vessel_code.focus(); return; }
+  showMsg('조회중...');
+  const r = await api('GET', `${BASE}/api/${code}`);
+  if (!r.success) { showMsg(r.message); isLoaded = false; return; }
+  fillForm(r.data);
+  isLoaded = true;
+  setMode(MODE.MODIFY);
+  showMsg('조회되었습니다.');
+  await loadGrid();
+}
+
+function handleAdd() {
+  clearForm(false);
+  isLoaded = false;
+  F.vessel_code.readOnly = false;
+  setMode(MODE.ADD);
+  F.vessel_code.focus();
+}
+
+async function handleSave() {
+  if (!validate()) return;
+
+  if (currentMode === MODE.ADD) {
+    const check = await api('GET', `${BASE}/api/${F.vessel_code.value.trim()}`);
+    if (check.success) {
+      showMsg('이미 등록된 모선코드입니다. 수정 모드로 전환합니다.');
+      fillForm(check.data);
+      isLoaded = true;
+      setMode(MODE.MODIFY);
+      return;
+    }
+    const r = await api('POST', `${BASE}/api`, getFormData());
+    if (!r.success) { showMsg(r.message); return; }
+    showMsg(r.message);
+    isLoaded = true;
+    setMode(MODE.MODIFY);
+
+  } else if (currentMode === MODE.MODIFY) {
+    const r = await api('PUT', `${BASE}/api/${F.vessel_code.value.trim()}`, getFormData());
+    if (!r.success) { showMsg(r.message); return; }
+    showMsg(r.message);
+  }
+  await loadGrid();
+}
+
+async function handleDelete() {
+  if (!isLoaded) { showMsg('먼저 자료를 조회하십시오.'); return; }
+  const ok = await modalConfirm('정말 삭제하시겠습니까?');
+  if (!ok) return;
+  const r = await api('DELETE', `${BASE}/api/${F.vessel_code.value.trim()}`);
+  if (!r.success) { showMsg(r.message); return; }
+  showMsg(r.message);
+  clearForm(false);
+  isLoaded = false;
+  setMode(MODE.READ);
+  await loadGrid();
+}
+
+// ── 포커스 이탈 ──────────────────────────────────────────────────────────────
+
+async function onVesselCodeBlur() {
+  const code = F.vessel_code.value.trim();
+  if (!code || currentMode !== MODE.READ) return;
+  const r = await api('GET', `${BASE}/api/${code}`);
+  if (r.success) {
+    fillForm(r.data); isLoaded = true;
+    setMode(MODE.MODIFY); showMsg('조회되었습니다.');
+  } else {
+    setMode(MODE.ADD); isLoaded = false;
+  }
+}
+
+async function onLineCodeBlur() {
+  const code = F.line_code.value.trim();
+  if (!code) { F.line_name.value = ''; return; }
+  const r = await api('GET', `${BASE}/api/meta/line/${code}`);
+  if (r.success) { F.line_name.value = r.data.line_name || ''; F.line_code.classList.remove('error'); }
+  else { F.line_name.value = ''; F.line_code.classList.add('error'); showMsg(r.message); }
+}
+
+async function onCountryCodeBlur() {
+  const code = F.country_code.value.trim();
+  if (!code) { F.country_name.value = ''; return; }
+  const r = await api('GET', `${BASE}/api/meta/country/${code}`);
+  if (r.success) { F.country_name.value = r.data.country_name || ''; F.country_code.classList.remove('error'); }
+  else { F.country_name.value = ''; F.country_code.classList.add('error'); showMsg(r.message); }
+}
+
+// ── 그리드 ───────────────────────────────────────────────────────────────────
+
+async function loadGrid() {
+  const r = await api('GET', `${BASE}/api/list`);
+  if (!r.success) { showMsg(r.message); return; }
+  gridData = r.data;
+  renderGrid(gridData);
+}
+
+function renderGrid(data) {
+  const tbody = $('grid-body');
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#888">자료가 없습니다.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(row => `
+    <tr data-code="${esc(row.vessel_code)}">
+      <td class="center">${esc(row.vessel_code)}</td>
+      <td>${esc(row.vessel_name_eng)}</td>
+      <td class="center">${esc(row.country_code)}</td>
+      <td class="center">${esc(row.line_code)}</td>
+      <td class="center">${esc(row.call_sign)}</td>
+      <td class="right">${fmtGross(row.gross_tonnage)}</td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.addEventListener('click', () => { document.querySelectorAll('#grid-body tr').forEach(r => r.classList.remove('selected')); tr.classList.add('selected'); });
+    tr.addEventListener('dblclick', async () => {
+      F.vessel_code.value = tr.dataset.code;
+      const r = await api('GET', `${BASE}/api/${tr.dataset.code}`);
+      if (r.success) { fillForm(r.data); isLoaded = true; setMode(MODE.MODIFY); showMsg('조회되었습니다.'); tr.classList.add('selected'); }
+    });
+  });
+}
+
+function onHeaderClick(col) {
+  sortDir = (sortCol === col && sortDir === 'asc') ? 'desc' : 'asc';
+  sortCol = col;
+  document.querySelectorAll('#vessel-grid th').forEach(th => {
+    th.classList.remove('sorted-asc','sorted-desc');
+    if (th.dataset.col === col) th.classList.add(sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+  });
+  renderGrid([...gridData].sort((a, b) => {
+    const va = String(a[col] ?? ''), vb = String(b[col] ?? '');
+    return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+  }));
+}
+
+// ── 폼 처리 ──────────────────────────────────────────────────────────────────
+
+function fillForm(d) {
+  F.vessel_code.value      = d.vessel_code || '';
+  F.vessel_name_eng.value  = d.vessel_name_eng || '';
+  F.vessel_name_kor.value  = d.vessel_name_kor || '';
+  F.line_code.value        = d.line_code || '';
+  F.line_name.value        = d.line_name || '';
+  F.country_code.value     = d.country_code || '';
+  F.country_name.value     = d.country_name || '';
+  F.call_sign.value        = d.call_sign || '';
+  F.ship_type.value        = d.ship_type || '';
+  F.gross_tonnage.value    = fmtNum(d.gross_tonnage, 'gross_tonnage');
+  F.dwt.value              = fmtNum(d.dwt, 'dwt');
+  F.loa.value              = fmtNum(d.loa, 'loa');
+  F.beam.value             = fmtNum(d.beam, 'beam');
+  F.hatch_count.value      = fmtNum(d.hatch_count, 'hatch_count');
+  F.horsepower.value       = fmtNum(d.horsepower, 'horsepower');
+  F.draft.value            = fmtNum(d.draft, 'draft');
+  F.cntr_bulk_type.value   = d.cntr_bulk_type || '';
+  F.max_hatch.value        = d.max_hatch || '';
+  F.bay_to.value           = d.bay_to || '';
+  F.row_from.value         = d.row_from || '';   F.row_to.value   = d.row_to || '';
+  F.rowd_from.value        = d.rowd_from || '';  F.rowd_to.value  = d.rowd_to || '';
+  F.tierh_from.value       = d.tierh_from || ''; F.tierh_to.value = d.tierh_to || '';
+  F.tierd_from.value       = d.tierd_from || ''; F.tierd_to.value = d.tierd_to || '';
+  F.crane_count.value      = d.crane_count || '';
+  F.remark1.value          = d.remark1 || '';
+  F.remark2.value          = d.remark2 || '';
+  F.remark3.value          = d.remark3 || '';
+  clearErrors();
+  if (AUTH_LEVEL >= 2) F.vessel_code.readOnly = true;
+}
+
+function clearForm(keepCode) {
+  const saved = F.vessel_code.value;
+  Object.values(F).forEach(el => { el.tagName === 'SELECT' ? (el.selectedIndex = 0) : (el.value = ''); });
+  if (keepCode) F.vessel_code.value = saved;
+  if (AUTH_LEVEL >= 2) F.vessel_code.readOnly = false;
+  clearErrors();
+}
+
+function getFormData() {
+  return {
+    vessel_code:     F.vessel_code.value.toUpperCase().trim(),
+    vessel_name_eng: F.vessel_name_eng.value.trim(),
+    vessel_name_kor: F.vessel_name_kor.value.trim(),
+    line_code:       F.line_code.value.toUpperCase().trim(),
+    country_code:    F.country_code.value.toUpperCase().trim(),
+    call_sign:       F.call_sign.value.trim(),
+    ship_type:       F.ship_type.value.trim(),
+    gross_tonnage:   F.gross_tonnage.value.replace(/,/g, ''),
+    dwt:             F.dwt.value.replace(/,/g, ''),
+    loa:             F.loa.value.replace(/,/g, ''),
+    beam:            F.beam.value.replace(/,/g, ''),
+    hatch_count:     F.hatch_count.value.replace(/,/g, ''),
+    horsepower:      F.horsepower.value.replace(/,/g, ''),
+    draft:           F.draft.value.replace(/,/g, ''),
+    cntr_bulk_type:  F.cntr_bulk_type.value,
+    max_hatch:       F.max_hatch.value.trim(),
+    bay_to:          F.bay_to.value.trim(),
+    row_from:        F.row_from.value.trim(),   row_to:   F.row_to.value.trim(),
+    rowd_from:       F.rowd_from.value.trim(),  rowd_to:  F.rowd_to.value.trim(),
+    tierh_from:      F.tierh_from.value.trim(), tierh_to: F.tierh_to.value.trim(),
+    tierd_from:      F.tierd_from.value.trim(), tierd_to: F.tierd_to.value.trim(),
+    crane_count:     F.crane_count.value.trim(),
+    remark1:         F.remark1.value.trim(),
+    remark2:         F.remark2.value.trim(),
+    remark3:         F.remark3.value.trim(),
+  };
+}
+
+// ── 유효성 ───────────────────────────────────────────────────────────────────
+
+function validate() {
+  clearErrors();
+  if (!F.vessel_code.value.trim()) { markErr(F.vessel_code, '모선코드를 입력하십시오.'); F.vessel_code.focus(); return false; }
+  if (!F.vessel_name_eng.value.trim()) { markErr(F.vessel_name_eng, '모선명(영문)을 입력하십시오.'); F.vessel_name_eng.focus(); return false; }
+  if (!F.call_sign.value.trim()) { markErr(F.call_sign, '호출부호를 입력하십시오.'); F.call_sign.focus(); return false; }
+  return true;
+}
+
+function markErr(el, msg) { el.classList.add('error'); showMsg(msg); }
+function clearErrors() { Object.values(F).forEach(el => el.classList && el.classList.remove('error')); }
+
+// ── 공통 유틸 ────────────────────────────────────────────────────────────────
+
+async function api(method, url, body) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(url, opts);
+    if (r.status === 401) { location.href = '/login'; return { success: false }; }
+    if (r.status === 403) { showMsg('접근 권한이 없습니다.'); return { success: false, message: '접근 권한이 없습니다.' }; }
+    return await r.json();
+  } catch (e) {
+    return { success: false, message: '서버 연결 오류: ' + e.message };
+  }
+}
+
+function showMsg(msg) { $('status-msg').textContent = msg; }
+
+function esc(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function fmtGross(v) {
+  if (v == null || v === '') return '';
+  const n = parseFloat(v);
+  return isNaN(n) ? String(v) : n.toLocaleString('ko-KR');
+}
+
+function fmtNum(val, fieldName) {
+  if (val === null || val === undefined || val === '') return '';
+  const n = parseFloat(String(val).replace(/,/g, ''));
+  if (isNaN(n)) return '';
+  if (['loa','beam','horsepower','draft'].includes(fieldName))
+    return n.toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return n.toLocaleString('ko-KR');
+}
+
+function modalConfirm(msg) {
+  return new Promise(resolve => {
+    $('modal-confirm-msg').textContent = msg;
+    $('modal-confirm').classList.add('show');
+    const yes = $('modal-yes'), no = $('modal-no');
+    function done(v) {
+      $('modal-confirm').classList.remove('show');
+      yes.removeEventListener('click', onY);
+      no.removeEventListener('click', onN);
+      resolve(v);
+    }
+    const onY = () => done(true), onN = () => done(false);
+    yes.addEventListener('click', onY);
+    no.addEventListener('click', onN);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+7. 인트라넷 server.js - 라우트 추가
+
+Edit server.js
+Added 4 lines
+또 동일한 CommonJS 힌트입니다 — 무시하고 계속 진행합니다.
+
+나머지 파일들을 마무리할게요.
+
+8. error.ejs 뷰 (권한없음 페이지)
+
+Write error.ejs
+44 lines
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>접근 오류</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; background: #f0f2f5; font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; display: flex; flex-direction: column; }
+    header {
+      background: linear-gradient(135deg, #1a1f36, #2d3561); color: #fff;
+      padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+    .container { flex: 1; display: flex; align-items: center; justify-content: center; }
+    .card {
+      background: #fff; border-radius: 16px; padding: 48px 40px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.1); text-align: center; max-width: 480px;
+    }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h2 { font-size: 20px; font-weight: 700; color: #cc2222; margin-bottom: 12px; }
+    p  { font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 24px; }
+    a  { display: inline-block; padding: 10px 24px; background: #1a1f36; color: #fff; border-radius: 8px; text-decoration: none; font-size: 14px; }
+    a:hover { background: #2d3561; }
+  </style>
+</head>
+<body>
+<header>
+  <span style="font-size:16px; font-weight:600;">인트라넷</span>
+  <% if (typeof user !== 'undefined' && user) { %>
+  <span style="font-size:13px; color:rgba(255,255,255,0.7);"><%= user.name %> (<%= user.empNo %>)</span>
+  <% } %>
+</header>
+<div class="container">
+  <div class="card">
+    <div class="icon">🚫</div>
+    <h2>접근 권한 없음</h2>
+    <p><%= message || '이 페이지에 접근할 권한이 없습니다.<br>관리자에게 권한을 요청하십시오.' %></p>
+    <a href="/main">메인으로 돌아가기</a>
+  </div>
+</div>
+</body>
+</html>
+9. main.ejs - MPOMS 메뉴 카드 추가
+
+Edit main.ejs
+Added 4 lines
+Edit main.ejs
+Added 9 lines
+Write progAuth.js
+54 lines
+'use strict';
+
+const express = require('express');
+const router = express.Router();
+const { requireAdminApi, getProgAuthList, setProgAuth, deleteProgAuth, getAllUsers } = require('../../lib/functions');
+
+// 특정 프로그램의 권한 목록 조회 (admin 전용)
+router.get('/:progId', requireAdminApi, async function(req, res) {
+  try {
+    const list = await getProgAuthList(req.params.progId);
+    res.json({ success: true, data: list });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+// 권한 부여/수정 (admin 전용)
+router.post('/', requireAdminApi, async function(req, res) {
+  try {
+    const { progId, empNo, authLevel } = req.body;
+    if (!progId || !empNo || !authLevel)
+      return res.json({ success: false, message: '필수 항목이 누락되었습니다.' });
+    const level = parseInt(authLevel, 10);
+    if (![1, 2, 3].includes(level))
+      return res.json({ success: false, message: '권한레벨은 1, 2, 3 중 하나여야 합니다.' });
+    await setProgAuth(progId, empNo, level);
+    res.json({ success: true, message: '권한이 설정되었습니다.' });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+// 권한 삭제 (admin 전용)
+router.delete('/:progId/:empNo', requireAdminApi, async function(req, res) {
+  try {
+    await deleteProgAuth(req.params.progId, req.params.empNo);
+    res.json({ success: true, message: '권한이 삭제되었습니다.' });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+// 전체 사용자 목록 (권한 부여 시 선택용, admin 전용)
+router.get('/users/all', requireAdminApi, async function(req, res) {
+  try {
+    const list = await getAllUsers();
+    res.json({ success: true, data: list });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+module.exports = router;
+Edit server.js
+Added 1 line
+최종 구조를 확인할게요.
+
+Bash 인트라넷 변경된 파일 목록 확인
+IN
+find "D:/002. 개발/004. 개발중 소스/001. intranet/" -type f ! -path "*/.git/*" | sort
+
+OUT
+D:/002. 개발/004. 개발중 소스/001. intranet/.claude/settings.local.json
+D:/002. 개발/004. 개발중 소스/001. intranet/config/db.js
+D:/002. 개발/004. 개발중 소스/001. intranet/config/mpoms_db.js
+D:/002. 개발/004. 개발중 소스/001. intranet/lib/functions.js
+D:/002. 개발/004. 개발중 소스/001. intranet/package.json
+D:/002. 개발/004. 개발중 소스/001. intranet/public/mpoms/vesselci/app.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/admin.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/api/progAuth.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/api/resetPw.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/api/users.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/auth.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/changePw.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/main.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/mpoms/vesselci.js
+D:/002. 개발/004. 개발중 소스/001. intranet/routes/setup.js
+D:/002. 개발/004. 개발중 소스/001. intranet/server.js
+D:/002. 개발/004. 개발중 소스/001. intranet/sql/add_prog_auth.sql
+D:/002. 개발/004. 개발중 소스/001. intranet/views/admin.ejs
+D:/002. 개발/004. 개발중 소스/001. intranet/views/change_password.ejs
+D:/002. 개발/004. 개발중 소스/001. intranet/views/error.ejs
+D:/002. 개발/004. 개발중 소스/001. intranet/views/login.ejs
+D:/002. 개발/004. 개발중 소스/001. intranet/views/main.ejs
+D:/002. 개발/004. 개발중 소스/001. intranet/views/mpoms/vesselci.ejs
+D:/002. 개발/004. 개발중 소스/001. intranet/views/setup.ejs
+모든 파일이 정상적으로 생성됐습니다. 전체 구조와 사용 방법을 정리해드릴게요.
+
+연동 방식 요약
+인트라넷 서버에 prc_vesselci를 통합하는 방식입니다. 별도 서버 없이 로그인 세션을 그대로 공유합니다.
+
+
+인트라넷 로그인 → /main → 모선코드 등록 카드 클릭 → /mpoms/vesselci
+변경/추가된 파일
+파일	내용
+[server.js](D:/002. 개발/004. 개발중 소스/001. intranet/server.js)	mpoms 라우트, progAuth API, static 미들웨어 추가
+[lib/functions.js](D:/002. 개발/004. 개발중 소스/001. intranet/lib/functions.js)	requireProgAuth() 미들웨어 + 권한 CRUD 함수 추가
+[config/mpoms_db.js](D:/002. 개발/004. 개발중 소스/001. intranet/config/mpoms_db.js)	mpoms DB 연결 풀 (신규)
+[routes/mpoms/vesselci.js](D:/002. 개발/004. 개발중 소스/001. intranet/routes/mpoms/vesselci.js)	페이지 + CRUD API (신규)
+[routes/api/progAuth.js](D:/002. 개발/004. 개발중 소스/001. intranet/routes/api/progAuth.js)	권한 관리 API (신규)
+[views/mpoms/vesselci.ejs](D:/002. 개발/004. 개발중 소스/001. intranet/views/mpoms/vesselci.ejs)	모선코드등록 화면 (신규)
+[views/error.ejs](D:/002. 개발/004. 개발중 소스/001. intranet/views/error.ejs)	권한없음 오류 화면 (신규)
+[views/main.ejs](D:/002. 개발/004. 개발중 소스/001. intranet/views/main.ejs)	MPOMS 메뉴 카드 추가
+[public/mpoms/vesselci/app.js](D:/002. 개발/004. 개발중 소스/001. intranet/public/mpoms/vesselci/app.js)	프론트엔드 JS (신규)
+[sql/add_prog_auth.sql](D:/002. 개발/004. 개발중 소스/001. intranet/sql/add_prog_auth.sql)	권한 테이블 생성 SQL
+권한 레벨
+레벨	기능	배지
+1	조회만 가능	초록
+2	조회 + 등록/수정	파랑
+3	조회 + 등록/수정 + 삭제	빨강
+admin 역할	항상 레벨 3 자동 부여	-
+실행 순서
+1. DB 준비
+
+
+-- intra DB에 권한 테이블 생성
+source add_prog_auth.sql
+
+-- 사용자에게 권한 부여 (예시)
+INSERT INTO t_prog_auth (prog_id, emp_no, auth_level)
+VALUES ('prc_vesselci', '0001', 2);
+2. [config/mpoms_db.js](D:/002. 개발/004. 개발중 소스/001. intranet/config/mpoms_db.js) DB 설정 수정
+
+3. 인트라넷 서버 재시작
+
+
+cd "001. intranet"
+npm start
+권한 관리 API (admin만 사용 가능)
+
+GET    /api/prog_auth/prc_vesselci      → 권한 목록 조회
+POST   /api/prog_auth                   → 권한 부여/수정 { progId, empNo, authLevel }
+DELETE /api/prog_auth/prc_vesselci/0001 → 권한 삭제
+지금 너가 말해준 내용들 다른 vscode창에서 볼려면 어떻게 해야돼
+방법은 두 가지입니다.
+
+방법 1 - 폴더 열기 (가장 간단)
+VS Code 새 창 열기: Ctrl + Shift + N
+파일 → 폴더 열기 (또는 Ctrl + K, Ctrl + O)
+아래 경로 입력:
+
+D:\002. 개발\004. 개발중 소스\001. intranet
+또는 mpoms만 보려면:
+
+
+D:\002. 개발\004. 개발중 소스\002. mpoms\prc_vesselci
+방법 2 - 터미널에서 바로 열기
+VS Code 터미널(Ctrl + ~)에서:
+
+
+# 인트라넷 프로젝트
+code "D:\002. 개발\004. 개발중 소스\001. intranet"
+
+# mpoms 프로젝트
+code "D:\002. 개발\004. 개발중 소스\002. mpoms\prc_vesselci"
+
+# 새 창으로 열기 (-n 옵션)
+code -n "D:\002. 개발\004. 개발중 소스\001. intranet"
+방법 3 - 두 폴더를 한 창에서 같이 보기 (워크스페이스)
+파일 → 작업 영역에 폴더 추가 로 인트라넷과 mpoms를 같은 창에서 동시에 볼 수 있습니다.
+
+이 대화 내용 자체를 보려는 거라면, Claude Code는 현재 대화를 별도로 저장하거나 내보내는 기능은 없으므로 이 창을 그대로 참고하거나 내용을 복사해서 메모장에 저장해두시는 게 좋습니다.
+
+지금 권한관련 테이블이랑 mpoms관련 테이블은 직접 만들어야 하나
+Read setup.js
+Read setup.ejs
+기존에 /setup 라우트로 자동 테이블 생성하는 구조가 있네요. 여기에 권한 테이블과 mpoms 테이블을 추가해서 브라우저에서 한 번만 접속하면 자동 생성되게 만들게요.
+
+Write setup.js
+142 lines
+const express = require('express');
+const router = express.Router();
+const pool = require('../config/db');
+const mpomsPool = require('../config/mpoms_db');
+const { createUser } = require('../lib/functions');
+
+router.get('/setup', async function(req, res) {
+  var results = [];
+
+  // ── 1. intra DB: users 테이블 ─────────────────────────────────────────────
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS users (
+      id                   INT AUTO_INCREMENT PRIMARY KEY,
+      name                 VARCHAR(50)  NOT NULL,
+      emp_no               VARCHAR(20)  NOT NULL UNIQUE,
+      phone                VARCHAR(20)  NOT NULL,
+      role                 ENUM('admin','user') NOT NULL DEFAULT 'user',
+      password             VARCHAR(255) NOT NULL,
+      must_change_password TINYINT(1)   NOT NULL DEFAULT 1,
+      created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8`);
+    results.push({ ok: true, msg: '[intra] users 테이블 준비 완료' });
+  } catch (e) {
+    results.push({ ok: false, msg: '[intra] users 테이블 생성 실패: ' + e.message });
+  }
+
+  // must_change_password 컬럼 누락 보정
+  try {
+    var [cols] = await pool.query("SHOW COLUMNS FROM users LIKE 'must_change_password'");
+    if (!cols.length) {
+      await pool.query("ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 1");
+      await pool.query("UPDATE users SET must_change_password = 0 WHERE role = 'admin'");
+      results.push({ ok: true, msg: '[intra] must_change_password 컬럼 추가 완료' });
+    }
+  } catch (e) {
+    results.push({ ok: false, msg: '[intra] 컬럼 추가 실패: ' + e.message });
+  }
+
+  // 기본 관리자 계정 생성
+  try {
+    var [check] = await pool.query("SELECT id FROM users WHERE emp_no = '0000' LIMIT 1");
+    if (!check.length) {
+      await createUser('관리자', '0000', '000-0000-0000', 'admin', '0000', false);
+      results.push({ ok: true, msg: '[intra] 관리자 계정(0000) 생성 완료' });
+    } else {
+      results.push({ ok: true, msg: '[intra] 관리자 계정 이미 존재' });
+    }
+  } catch (e) {
+    results.push({ ok: false, msg: '[intra] 관리자 계정 생성 실패: ' + e.message });
+  }
+
+  // ── 2. intra DB: 프로그램 권한 테이블 ────────────────────────────────────
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS t_prog_auth (
+      id          INT           NOT NULL AUTO_INCREMENT,
+      prog_id     VARCHAR(30)   NOT NULL COMMENT '프로그램 ID',
+      emp_no      VARCHAR(20)   NOT NULL COMMENT '사번',
+      auth_level  TINYINT       NOT NULL DEFAULT 1 COMMENT '1=조회, 2=등록/수정, 3=삭제포함',
+      reg_date    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_prog_emp (prog_id, emp_no)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='프로그램별 사용자 권한'`);
+    results.push({ ok: true, msg: '[intra] t_prog_auth 테이블 준비 완료' });
+  } catch (e) {
+    results.push({ ok: false, msg: '[intra] t_prog_auth 테이블 생성 실패: ' + e.message });
+  }
+
+  // ── 3. mpoms DB: 모선코드 테이블 ─────────────────────────────────────────
+  try {
+    await mpomsPool.query(`CREATE TABLE IF NOT EXISTS t_vessel_c (
+      vessel_code      VARCHAR(4)    NOT NULL        COMMENT '모선코드 (PK)',
+      vessel_name_eng  VARCHAR(100)  NOT NULL        COMMENT '모선명(영문)',
+      vessel_name_kor  VARCHAR(100)  DEFAULT NULL    COMMENT '모선명(한글)',
+      line_code        VARCHAR(3)    DEFAULT NULL    COMMENT 'LINE코드',
+      country_code     VARCHAR(2)    DEFAULT NULL    COMMENT '국가코드',
+      call_sign        VARCHAR(20)   DEFAULT NULL    COMMENT '호출부호',
+      ship_type        VARCHAR(20)   DEFAULT NULL    COMMENT '선박유형',
+      gross_tonnage    DECIMAL(12,0) DEFAULT NULL    COMMENT '총톤수',
+      dwt              DECIMAL(12,0) DEFAULT NULL    COMMENT '재화중량톤',
+      loa              DECIMAL(8,1)  DEFAULT NULL    COMMENT '전장(LOA)',
+      beam             DECIMAL(8,1)  DEFAULT NULL    COMMENT '전폭',
+      hatch_count      DECIMAL(8,0)  DEFAULT NULL    COMMENT '창구개수',
+      horsepower       DECIMAL(10,1) DEFAULT NULL    COMMENT '일공마력수',
+      draft            DECIMAL(6,1)  DEFAULT NULL    COMMENT '흘수기준',
+      max_hatch        VARCHAR(5)    DEFAULT NULL    COMMENT '화물 MAX HATCH',
+      bay_to           VARCHAR(3)    DEFAULT NULL    COMMENT '화물 MAX BAY',
+      row_from         VARCHAR(3)    DEFAULT NULL    COMMENT '화물 ROW FROM',
+      row_to           VARCHAR(3)    DEFAULT NULL    COMMENT '화물 ROW TO',
+      rowd_from        VARCHAR(3)    DEFAULT NULL    COMMENT '화물 ROW DECK FROM',
+      rowd_to          VARCHAR(3)    DEFAULT NULL    COMMENT '화물 ROW DECK TO',
+      tierh_from       VARCHAR(3)    DEFAULT NULL    COMMENT 'TIER HOLD FROM',
+      tierh_to         VARCHAR(3)    DEFAULT NULL    COMMENT 'TIER HOLD TO',
+      tierd_from       VARCHAR(3)    DEFAULT NULL    COMMENT 'TIER DECK FROM',
+      tierd_to         VARCHAR(3)    DEFAULT NULL    COMMENT 'TIER DECK TO',
+      crane_count      VARCHAR(5)    DEFAULT NULL    COMMENT 'CRANE 수',
+      cntr_bulk_type   VARCHAR(1)    DEFAULT NULL    COMMENT 'CNTR/BULK 구분',
+      remark1          VARCHAR(100)  DEFAULT NULL,
+      remark2          VARCHAR(100)  DEFAULT NULL,
+      remark3          VARCHAR(100)  DEFAULT NULL,
+      input_program    VARCHAR(30)   DEFAULT NULL,
+      input_user       VARCHAR(20)   DEFAULT NULL,
+      input_datetime   VARCHAR(12)   DEFAULT NULL,
+      update_program   VARCHAR(30)   DEFAULT NULL,
+      update_user      VARCHAR(20)   DEFAULT NULL,
+      update_datetime  VARCHAR(12)   DEFAULT NULL,
+      PRIMARY KEY (vessel_code)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='모선코드 마스터'`);
+    results.push({ ok: true, msg: '[mpoms] t_vessel_c 테이블 준비 완료' });
+  } catch (e) {
+    results.push({ ok: false, msg: '[mpoms] t_vessel_c 테이블 생성 실패: ' + e.message });
+  }
+
+  // ── 4. mpoms DB: LINE코드 테이블 ─────────────────────────────────────────
+  try {
+    await mpomsPool.query(`CREATE TABLE IF NOT EXISTS t_line_c (
+      line_code  VARCHAR(3)   NOT NULL  COMMENT 'LINE코드 (PK)',
+      line_name  VARCHAR(50)  DEFAULT NULL COMMENT 'LINE명',
+      PRIMARY KEY (line_code)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LINE코드 마스터'`);
+    results.push({ ok: true, msg: '[mpoms] t_line_c 테이블 준비 완료' });
+  } catch (e) {
+    results.push({ ok: false, msg: '[mpoms] t_line_c 테이블 생성 실패: ' + e.message });
+  }
+
+  // ── 5. mpoms DB: 국가코드 테이블 ─────────────────────────────────────────
+  try {
+    await mpomsPool.query(`CREATE TABLE IF NOT EXISTS t_country_c (
+      country_code  VARCHAR(2)   NOT NULL  COMMENT '국가코드 (PK)',
+      country_name  VARCHAR(50)  DEFAULT NULL COMMENT '국가명',
+      PRIMARY KEY (country_code)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='국가코드 마스터'`);
+    results.push({ ok: true, msg: '[mpoms] t_country_c 테이블 준비 완료' });
+  } catch (e) {
+    results.push({ ok: false, msg: '[mpoms] t_country_c 테이블 생성 실패: ' + e.message });
+  }
+
+  var hasError = results.some(r => !r.ok);
+  res.render('setup', { results, hasError });
+});
+
+module.exports = router;
+Write setup.ejs
+62 lines
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>초기 설정</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); padding: 36px 40px; width: 100%; max-width: 560px; }
+    h1 { font-size: 20px; font-weight: 700; color: #1a1f36; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; }
+    .result-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+    .result-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
+    .result-item.ok  { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+    .result-item.err { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .result-icon { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
+    .section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; }
+    .section h3 { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 10px; }
+    .kv { display: flex; gap: 8px; font-size: 13px; margin-bottom: 6px; }
+    .kv .k { color: #6b7280; min-width: 60px; }
+    .kv .v { font-weight: 700; color: #1a1f36; }
+    .warn { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #92400e; margin-bottom: 20px; }
+    .btn { display: inline-block; padding: 11px 28px; background: #1a1f36; color: #fff; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; }
+    .btn:hover { background: #2d3561; }
+    .btn-retry { background: #dc2626; }
+    .btn-retry:hover { background: #b91c1c; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>시스템 초기 설정</h1>
+
+  <div class="result-list">
+    <% results.forEach(function(r) { %>
+      <div class="result-item <%= r.ok ? 'ok' : 'err' %>">
+        <span class="result-icon"><%= r.ok ? '✅' : '❌' %></span>
+        <span><%= r.msg %></span>
+      </div>
+    <% }); %>
+  </div>
+
+  <% if (!hasError) { %>
+    <div class="section">
+      <h3>기본 관리자 계정</h3>
+      <div class="kv"><span class="k">사번</span><span class="v">0000</span></div>
+      <div class="kv"><span class="k">비밀번호</span><span class="v">0000</span></div>
+    </div>
+
+    <div class="warn">
+      ⚠️ 보안을 위해 로그인 후 <strong>즉시 비밀번호를 변경</strong>하십시오.
+    </div>
+
+    <a class="btn" href="/login">로그인 페이지로 이동</a>
+  <% } else { %>
+    <div class="warn">
+      ⚠️ 오류가 발생했습니다. <strong>config/db.js</strong> 및 <strong>config/mpoms_db.js</strong>의 DB 접속 정보를 확인하세요.
+    </div>
+    <a class="btn btn-retry" href="/setup">다시 시도</a>
+  <% } %>
+</div>
+</body>
+</html>
+완료됐습니다. 이제 사용 방법은 매우 간단합니다.
+
+테이블 생성 방법
+브라우저에서 한 번만 접속하면 끝입니다:
+
+
+http://localhost:3000/setup
+자동으로 생성되는 테이블:
+
+DB	테이블	내용
+intra	users	사용자 계정
+intra	t_prog_auth	프로그램별 권한
+mpoms	t_vessel_c	모선코드 마스터
+mpoms	t_line_c	LINE코드 마스터
+mpoms	t_country_c	국가코드 마스터
+결과 화면에서 모두 ✅이면 성공, ❌이면 [config/db.js](D:/002. 개발/004. 개발중 소스/001. intranet/config/db.js)와 [config/mpoms_db.js](D:/002. 개발/004. 개발중 소스/001. intranet/config/mpoms_db.js) DB 접속 정보를 확인하면 됩니다.
+
+전체 실행 순서
+
+1. config/db.js       → intra DB 접속 정보 설정
+2. config/mpoms_db.js → mpoms DB 접속 정보 설정
+3. npm install        → 패키지 설치
+4. npm start          → 서버 시작
+5. 브라우저에서 http://localhost:3000/setup 접속 → 테이블 자동 생성
+6. http://localhost:3000/login 에서 0000 / 0000 으로 로그인
