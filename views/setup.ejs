@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>인트라넷 초기 설정</title>
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; max-width: 500px; margin: 60px auto; padding: 0 20px; }
+    .box { border-radius: 10px; padding: 24px 28px; margin-bottom: 16px; }
+    .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+    .error   { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .info    { background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af; }
+    h2 { margin: 0 0 12px; font-size: 17px; }
+    p  { margin: 4px 0; font-size: 14px; }
+    a  { color: #4f7cff; }
+  </style>
+</head>
+<body>
+<% if (errors.length) { %>
+  <div class="box error">
+    <h2>오류 발생</h2>
+    <% errors.forEach(function(e) { %>
+      <p><%= e %></p>
+    <% }); %>
+    <p style="margin-top:10px;">config/db.js의 DB 접속 정보를 확인하세요.</p>
+  </div>
+<% } else { %>
+  <div class="box success">
+    <h2>초기화 완료!</h2>
+    <p>users 테이블이 준비되었습니다.</p>
+  </div>
+  <div class="box info">
+    <h2>관리자 계정</h2>
+    <p>사번: <strong>0000</strong></p>
+    <p>비밀번호: <strong>0000</strong></p>
+  </div>
+  <div class="box error">
+    <h2>중요</h2>
+    <p>보안을 위해 <strong>setup 페이지</strong>를 비활성화하세요.</p>
+  </div>
+  <p><a href="/login">로그인 페이지로 이동</a></p>
+<% } %>
+</body>
+</html>

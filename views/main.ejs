@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>인트라넷</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh; background: #f0f2f5;
+      font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; color: #1a1f36;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1f36, #2d3561); color: #fff;
+      padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+
+    .header-left { font-size: 16px; font-weight: 600; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { font-size: 13px; color: rgba(255,255,255,0.7); }
+
+    .btn-logout {
+      padding: 7px 16px;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px; color: #fff; font-size: 13px; cursor: pointer;
+      text-decoration: none; transition: background 0.2s;
+    }
+
+    .btn-logout:hover { background: rgba(255,255,255,0.2); }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 48px 16px; text-align: center; }
+
+    .welcome { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+    .welcome span { color: #4f7cff; }
+    .sub { color: #6b7280; font-size: 15px; }
+
+    .cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px; margin-top: 48px;
+    }
+
+    .menu-card {
+      background: #fff; border-radius: 16px; padding: 32px 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07); opacity: 0.5;
+    }
+
+    .menu-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; font-size: 26px;
+    }
+
+    .menu-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .menu-card p  { font-size: 12px; color: #9ca3af; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-left">인트라넷</div>
+  <div class="header-right">
+    <span class="user-info"><%= user.name %> (<%= user.empNo %>)</span>
+    <a class="btn-logout" href="/logout">로그아웃</a>
+  </div>
+</header>
+
+<div class="container">
+  <div class="welcome"><span><%= user.name %></span>님, 환영합니다!</div>
+  <div class="sub">오늘도 좋은 하루 되세요.</div>
+
+  <div class="cards">
+    <div class="menu-card">
+      <div class="menu-icon" style="background:#ede9fe;">&#128203;</div>
+      <h3>전자결재</h3><p>준비 중</p>
+    </div>
+    <div class="menu-card">
+      <div class="menu-icon" style="background:#dbeafe;">&#128197;</div>
+      <h3>일정관리</h3><p>준비 중</p>
+    </div>
+    <div class="menu-card">
+      <div class="menu-icon" style="background:#dcfce7;">&#128226;</div>
+      <h3>공지사항</h3><p>준비 중</p>
+    </div>
+    <div class="menu-card">
+      <div class="menu-icon" style="background:#fef9c3;">&#128101;</div>
+      <h3>사원 주소록</h3><p>준비 중</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
