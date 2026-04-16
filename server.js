@@ -26,6 +26,7 @@ app.use('/', require('./routes/changePw'));
 app.use('/api/users', require('./routes/api/users'));
 app.use('/api/reset_password', require('./routes/api/resetPw'));
 app.use('/api/prog_auth', require('./routes/api/progAuth'));
+app.use('/', require('./routes/progAuth'));
 
 // ── MPOMS 프로그램 ─────────────────────────────────────────────────────────
 app.use('/mpoms/vesselci', require('./routes/mpoms/vesselci'));

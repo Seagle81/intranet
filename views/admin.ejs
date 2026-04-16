@@ -38,7 +38,14 @@
     .btn-logout:hover { background: rgba(255,255,255,0.2); }
 
     .container { max-width: 1000px; margin: 0 auto; padding: 32px 16px; }
-    .page-title { font-size: 22px; font-weight: 700; margin-bottom: 24px; }
+    .page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .page-title { font-size: 22px; font-weight: 700; }
+    .btn-nav {
+      padding: 8px 16px; background: #fff; border: 1.5px solid #e5e7eb;
+      border-radius: 8px; color: #374151; font-size: 13px; font-weight: 500;
+      text-decoration: none; transition: background 0.2s; white-space: nowrap;
+    }
+    .btn-nav:hover { background: #f3f4f6; }
 
     .card {
       background: #fff; border-radius: 14px; padding: 28px;
@@ -183,7 +190,10 @@
 </header>
 
 <div class="container">
-  <div class="page-title">사용자 관리</div>
+  <div class="page-header">
+    <div class="page-title">사용자 관리</div>
+    <a class="btn-nav" href="/prog_auth">프로그램 접근권한 관리 →</a>
+  </div>
 
   <!-- 사용자 추가 -->
   <div class="card">
