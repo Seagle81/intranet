@@ -49,19 +49,11 @@
     .card-title {
       font-size: 15px; font-weight: 600; margin-bottom: 20px;
       padding-bottom: 12px; border-bottom: 1px solid #eef0f5;
-      display: flex; align-items: center; gap: 10px;
     }
 
-    .card-title .prog-tag {
-      background: #ede9fe; color: #6d28d9; border-radius: 6px;
-      padding: 2px 10px; font-size: 12px; font-weight: 600;
-    }
-
-    .form-row {
-      display: grid; gap: 10px; align-items: end;
-    }
-    .form-row-2 { grid-template-columns: 1fr 1fr auto; }
-    .form-row-3 { grid-template-columns: 1fr 1fr 1fr auto; }
+    .form-row { display: grid; gap: 10px; align-items: end; }
+    .cols-2 { grid-template-columns: 1fr 1fr auto; }
+    .cols-4 { grid-template-columns: 1.3fr 1.3fr 1fr auto; }
 
     .form-group label {
       display: block; font-size: 12px; font-weight: 600;
@@ -122,16 +114,17 @@
       padding: 4px 12px; border-radius: 6px; font-size: 12px;
       cursor: pointer; border: 1.5px solid transparent; transition: all 0.2s;
     }
-    .btn-manage { background: #fff; border-color: #d1d5db; color: #374151; }
-    .btn-manage:hover { background: #f3f4f6; }
     .btn-delete { background: #fff; border-color: #fca5a5; color: #dc2626; }
     .btn-delete:hover { background: #fef2f2; }
 
     .empty-state { text-align: center; padding: 40px; color: #9ca3af; font-size: 14px; }
 
-    #authCard { display: none; }
-
     .divider { border: none; border-top: 1px solid #eef0f5; margin: 20px 0; }
+
+    .auth-list-title {
+      font-size: 13px; font-weight: 600; color: #6b7280;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
@@ -153,7 +146,7 @@
   <!-- 프로그램 등록 -->
   <div class="card">
     <div class="card-title">프로그램 등록</div>
-    <div class="form-row form-row-2">
+    <div class="form-row cols-2">
       <div class="form-group">
         <label>프로그램 ID</label>
         <input type="text" id="newProgId" placeholder="예) prc_vesselci">
@@ -186,15 +179,16 @@
     </table>
   </div>
 
-  <!-- 권한 관리 (프로그램 선택 시 표시) -->
-  <div class="card" id="authCard">
-    <div class="card-title">
-      권한 관리
-      <span class="prog-tag" id="authProgTag"></span>
-    </div>
-
-    <!-- 권한 부여 -->
-    <div class="form-row form-row-3">
+  <!-- 권한 부여 / 권한 목록 -->
+  <div class="card">
+    <div class="card-title">권한 부여</div>
+    <div class="form-row cols-4">
+      <div class="form-group">
+        <label>프로그램</label>
+        <select id="selProgId" onchange="onProgChange()">
+          <option value="">프로그램 선택</option>
+        </select>
+      </div>
       <div class="form-group">
         <label>사용자</label>
         <select id="empNo">
@@ -216,7 +210,7 @@
 
     <hr class="divider">
 
-    <!-- 권한 목록 -->
+    <div class="auth-list-title" id="authListTitle">프로그램을 선택하면 권한 목록이 표시됩니다.</div>
     <table>
       <thead>
         <tr>
@@ -224,7 +218,7 @@
         </tr>
       </thead>
       <tbody id="authTableBody">
-        <tr><td colspan="5"><div class="empty-state">등록된 권한이 없습니다.</div></td></tr>
+        <tr><td colspan="5"><div class="empty-state">프로그램을 선택하세요.</div></td></tr>
       </tbody>
     </table>
   </div>
@@ -248,20 +242,36 @@
     });
   }
 
-  // ── 프로그램 목록 로드 ───────────────────────────────────────────────────────
+  // ── 프로그램 목록 로드 (테이블 + 드롭다운 동시 갱신) ────────────────────────
   async function loadProgs() {
     var res  = await fetch('/api/prog_auth/progs');
     var data = await res.json();
     var tbody = document.getElementById('progTableBody');
+    var sel   = document.getElementById('selProgId');
+
+    // 드롭다운 갱신 (현재 선택값 유지)
+    var prevVal = sel.value;
+    sel.innerHTML = '<option value="">프로그램 선택</option>';
 
     if (!data.success || !data.data.length) {
       tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">등록된 프로그램이 없습니다.</div></td></tr>';
       return;
     }
 
+    data.data.forEach(function(p) {
+      var opt = document.createElement('option');
+      opt.value = p.prog_id;
+      opt.textContent = p.prog_id + '  —  ' + p.prog_name;
+      sel.appendChild(opt);
+    });
+
+    // 이전 선택값 복원
+    if (prevVal) sel.value = prevVal;
+
+    // 프로그램 테이블 갱신
     tbody.innerHTML = data.data.map(function(p) {
-      var sel = p.prog_id === currentProgId ? ' selected' : '';
-      return '<tr class="prog-row' + sel + '" onclick="selectProg(\'' + esc(p.prog_id) + '\',\'' + esc(p.prog_name) + '\')">' +
+      var isSelected = p.prog_id === currentProgId;
+      return '<tr class="prog-row' + (isSelected ? ' selected' : '') + '" onclick="selectProg(\'' + esc(p.prog_id) + '\')">' +
         '<td><strong>' + esc(p.prog_id) + '</strong></td>' +
         '<td>' + esc(p.prog_name) + '</td>' +
         '<td><span class="count-badge">' + (p.auth_count || 0) + '명</span></td>' +
@@ -314,7 +324,10 @@
     if (data.success) {
       if (currentProgId === progId) {
         currentProgId = '';
-        document.getElementById('authCard').style.display = 'none';
+        document.getElementById('selProgId').value = '';
+        document.getElementById('authListTitle').textContent = '프로그램을 선택하면 권한 목록이 표시됩니다.';
+        document.getElementById('authTableBody').innerHTML =
+          '<tr><td colspan="5"><div class="empty-state">프로그램을 선택하세요.</div></td></tr>';
       }
       loadProgs();
     } else {
@@ -322,25 +335,29 @@
     }
   }
 
-  // ── 프로그램 선택 → 권한 관리 표시 ──────────────────────────────────────────
-  function selectProg(progId, progName) {
+  // ── 드롭다운 변경 시 ─────────────────────────────────────────────────────────
+  function onProgChange() {
+    var progId = document.getElementById('selProgId').value;
+    if (!progId) return;
+    selectProg(progId);
+  }
+
+  // ── 프로그램 선택 (테이블 행 클릭 또는 드롭다운 선택) ────────────────────────
+  function selectProg(progId) {
     currentProgId = progId;
-    document.getElementById('authProgTag').textContent = progId + '  ' + progName;
-    document.getElementById('authCard').style.display = 'block';
-    document.getElementById('authCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // 드롭다운 동기화
+    document.getElementById('selProgId').value = progId;
+
+    // 테이블 행 강조
+    document.querySelectorAll('.prog-row').forEach(function(tr) {
+      var strong = tr.querySelector('td strong');
+      tr.classList.toggle('selected', strong && strong.textContent === progId);
+    });
+
     document.getElementById('grantSuccess').classList.remove('show');
     document.getElementById('grantError').classList.remove('show');
     loadAuth();
-
-    // 선택된 행 강조
-    document.querySelectorAll('.prog-row').forEach(function(tr) {
-      tr.classList.remove('selected');
-    });
-    document.querySelectorAll('.prog-row').forEach(function(tr) {
-      if (tr.querySelector('td strong') && tr.querySelector('td strong').textContent === progId) {
-        tr.classList.add('selected');
-      }
-    });
   }
 
   // ── 권한 목록 로드 ───────────────────────────────────────────────────────────
@@ -349,6 +366,9 @@
     var res  = await fetch('/api/prog_auth/' + encodeURIComponent(currentProgId));
     var data = await res.json();
     var tbody = document.getElementById('authTableBody');
+
+    document.getElementById('authListTitle').textContent =
+      '[' + currentProgId + '] 권한 목록';
 
     if (!data.success || !data.data.length) {
       tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">등록된 권한이 없습니다.</div></td></tr>';
@@ -374,6 +394,7 @@
 
   // ── 권한 부여 ────────────────────────────────────────────────────────────────
   async function grantAuth() {
+    var progId    = document.getElementById('selProgId').value;
     var empNo     = document.getElementById('empNo').value;
     var authLevel = document.getElementById('authLevel').value;
     var succEl    = document.getElementById('grantSuccess');
@@ -381,6 +402,11 @@
     succEl.classList.remove('show');
     errEl.classList.remove('show');
 
+    if (!progId) {
+      errEl.textContent = '프로그램을 선택하세요.';
+      errEl.classList.add('show');
+      return;
+    }
     if (!empNo) {
       errEl.textContent = '사용자를 선택하세요.';
       errEl.classList.add('show');
@@ -390,7 +416,7 @@
     var res  = await fetch('/api/prog_auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ progId: currentProgId, empNo: empNo, authLevel: authLevel })
+      body: JSON.stringify({ progId: progId, empNo: empNo, authLevel: authLevel })
     });
     var data = await res.json();
     if (data.success) {
