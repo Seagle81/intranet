@@ -65,7 +65,20 @@ router.get('/setup', async function(req, res) {
     results.push({ ok: false, msg: '[intra] t_prog_auth 테이블 생성 실패: ' + e.message });
   }
 
-  // ── 3. mpoms DB: 모선코드 테이블 ─────────────────────────────────────────
+  // ── 3. intra DB: 프로그램 마스터 테이블 ──────────────────────────────────────
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS t_prog (
+      prog_id    VARCHAR(30)   NOT NULL COMMENT '프로그램 ID (PK)',
+      prog_name  VARCHAR(100)  NOT NULL COMMENT '프로그램명',
+      reg_date   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (prog_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='프로그램 마스터'`);
+    results.push({ ok: true, msg: '[intra] t_prog 테이블 준비 완료' });
+  } catch (e) {
+    results.push({ ok: false, msg: '[intra] t_prog 테이블 생성 실패: ' + e.message });
+  }
+
+  // ── 4. mpoms DB: 모선코드 테이블 ─────────────────────────────────────────
   try {
     await mpomsPool.query(`CREATE TABLE IF NOT EXISTS t_vessel_c (
       vessel_code      VARCHAR(4)    NOT NULL        COMMENT '모선코드 (PK)',
@@ -110,7 +123,7 @@ router.get('/setup', async function(req, res) {
     results.push({ ok: false, msg: '[mpoms] t_vessel_c 테이블 생성 실패: ' + e.message });
   }
 
-  // ── 4. mpoms DB: LINE코드 테이블 ─────────────────────────────────────────
+  // ── 5. mpoms DB: LINE코드 테이블 ─────────────────────────────────────────
   try {
     await mpomsPool.query(`CREATE TABLE IF NOT EXISTS t_line_c (
       line_code  VARCHAR(3)   NOT NULL  COMMENT 'LINE코드 (PK)',
@@ -122,7 +135,7 @@ router.get('/setup', async function(req, res) {
     results.push({ ok: false, msg: '[mpoms] t_line_c 테이블 생성 실패: ' + e.message });
   }
 
-  // ── 5. mpoms DB: 국가코드 테이블 ─────────────────────────────────────────
+  // ── 6. mpoms DB: 국가코드 테이블 ─────────────────────────────────────────
   try {
     await mpomsPool.query(`CREATE TABLE IF NOT EXISTS t_country_c (
       country_code  VARCHAR(2)   NOT NULL  COMMENT '국가코드 (PK)',
