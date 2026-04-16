@@ -35,6 +35,19 @@ router.post('/progs', requireAdminApi, async function(req, res) {
   }
 });
 
+// 미등록 프로그램 목록 (config/programs.js 기준으로 t_prog에 없는 것)
+router.get('/progs/unregistered', requireAdminApi, async function(req, res) {
+  try {
+    const allProgs   = require('../../config/programs');
+    const registered = await getProgList();
+    const regIds     = registered.map(function(p) { return p.prog_id; });
+    const unregistered = allProgs.filter(function(p) { return !regIds.includes(p.progId); });
+    res.json({ success: true, data: unregistered });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
 // 프로그램 삭제 (권한도 함께)
 router.delete('/progs/:progId', requireAdminApi, async function(req, res) {
   try {

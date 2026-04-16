@@ -125,6 +125,24 @@
       font-size: 13px; font-weight: 600; color: #6b7280;
       margin-bottom: 12px;
     }
+
+    .unregistered-section {
+      margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid #eef0f5;
+    }
+    .unregistered-label {
+      font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 8px;
+    }
+    .unregistered-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px; cursor: pointer;
+      background: #f3f4f6; border: 1.5px solid #e5e7eb;
+      font-size: 12px; color: #374151; transition: all 0.2s;
+    }
+    .chip:hover { background: #ede9fe; border-color: #c4b5fd; color: #6d28d9; }
+    .chip .chip-id { font-weight: 700; }
+    .chip .chip-name { color: #6b7280; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -159,6 +177,11 @@
     </div>
     <div class="alert alert-success" id="progSuccess"></div>
     <div class="alert alert-error"   id="progError"></div>
+
+    <div class="unregistered-section" id="unregisteredSection" style="display:none">
+      <div class="unregistered-label">미등록 프로그램 (클릭하면 자동 입력)</div>
+      <div class="unregistered-chips" id="unregisteredChips"></div>
+    </div>
   </div>
 
   <!-- 프로그램 목록 -->
@@ -242,6 +265,34 @@
     });
   }
 
+  // ── 미등록 프로그램 로드 ─────────────────────────────────────────────────────
+  async function loadUnregistered() {
+    var res  = await fetch('/api/prog_auth/progs/unregistered');
+    var data = await res.json();
+    var section = document.getElementById('unregisteredSection');
+    var chips   = document.getElementById('unregisteredChips');
+
+    if (!data.success || !data.data.length) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+    chips.innerHTML = data.data.map(function(p) {
+      return '<span class="chip" onclick="fillProgForm(\'' + esc(p.progId) + '\',\'' + esc(p.progName) + '\')">' +
+        '<span class="chip-id">' + esc(p.progId) + '</span>' +
+        '<span class="chip-name">' + esc(p.progName) + '</span>' +
+      '</span>';
+    }).join('');
+  }
+
+  // ── 미등록 프로그램 클릭 시 자동 입력 ────────────────────────────────────────
+  function fillProgForm(progId, progName) {
+    document.getElementById('newProgId').value   = progId;
+    document.getElementById('newProgName').value = progName;
+    document.getElementById('newProgId').focus();
+  }
+
   // ── 프로그램 목록 로드 (테이블 + 드롭다운 동시 갱신) ────────────────────────
   async function loadProgs() {
     var res  = await fetch('/api/prog_auth/progs');
@@ -310,6 +361,7 @@
       document.getElementById('newProgId').value   = '';
       document.getElementById('newProgName').value = '';
       loadProgs();
+      loadUnregistered();
     } else {
       errEl.textContent = data.message;
       errEl.classList.add('show');
@@ -444,6 +496,7 @@
   }
 
   loadProgs();
+  loadUnregistered();
   loadUsers();
 </script>
 </body>
