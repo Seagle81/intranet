@@ -80,7 +80,26 @@
   <div class="welcome"><span><%= user.name %></span>님, 환영합니다!</div>
   <div class="sub">오늘도 좋은 하루 되세요.</div>
 
-  <div class="cards">
+  <% if (user.role === 'admin') { %>
+  <div style="margin-top:48px;text-align:left;">
+    <div style="font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">관리자 메뉴</div>
+    <div class="cards" style="margin-top:0;">
+      <a class="menu-card menu-card-link" href="/admin">
+        <div class="menu-icon" style="background:#ede9fe;">&#128100;</div>
+        <h3>사용자 관리</h3><p>계정 추가 · 수정 · 삭제</p>
+      </a>
+      <a class="menu-card menu-card-link" href="/prog_auth">
+        <div class="menu-icon" style="background:#fee2e2;">&#128274;</div>
+        <h3>프로그램 접근권한</h3><p>권한 부여 · 관리</p>
+      </a>
+    </div>
+  </div>
+  <div style="margin-top:36px;text-align:left;">
+    <div style="font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">전체 메뉴</div>
+  </div>
+  <% } %>
+
+  <div class="cards" style="<%= user.role === 'admin' ? 'margin-top:0;' : '' %>">
     <div class="menu-card">
       <div class="menu-icon" style="background:#ede9fe;">&#128203;</div>
       <h3>전자결재</h3><p>준비 중</p>

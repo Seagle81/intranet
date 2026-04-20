@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>동호회 전체 보고서</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{min-height:100vh;background:#f0f2f5;font-family:'Segoe UI','Malgun Gothic',sans-serif;color:#1a1f36}
@@ -13,45 +14,49 @@
     .ui{font-size:13px;color:rgba(255,255,255,.7)}
     .btn-lo{padding:7px 16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:13px;text-decoration:none}
     .sep{color:rgba(255,255,255,.4)}
-    .container{max-width:1200px;margin:0 auto;padding:32px 16px}
+    .container{max-width:1400px;margin:0 auto;padding:32px 16px}
     .ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
     .pt{font-size:22px;font-weight:700}
     .pa{display:flex;gap:8px}
     .btn-n{padding:8px 16px;background:#fff;border:1.5px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;white-space:nowrap}
     .btn-n:hover{background:#f3f4f6}
+    .btn-excel{padding:8px 18px;background:#fff;border:1.5px solid #22c55e;border-radius:8px;color:#16a34a;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+    .btn-excel:hover{background:#f0fdf4}
     .btn-print{padding:8px 18px;background:linear-gradient(135deg,#4f7cff,#9b59b6);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
-    .card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:20px}
-    .card-title{font-size:15px;font-weight:700;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #eef0f5;display:flex;align-items:center;justify-content:space-between}
-    .ct-cost{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600}
-    .ct-op{background:#dbeafe;color:#1d4ed8}
-    .ct-pg{background:#ede9fe;color:#6d28d9}
-    .ct-car{background:#dcfce7;color:#166534}
-    .ct-tr{background:#fef9c3;color:#854d0e}
-    .tw{overflow-x:auto}
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    thead tr{background:#f8f9fc;border-bottom:2px solid #e5e7eb}
-    thead th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
-    tbody tr{border-bottom:1px solid #f3f4f6}
-    tbody tr:hover{background:#f8f9fc}
-    tbody td{padding:10px 12px}
-    .num{text-align:right}
-    tfoot tr{background:#f8f9fc;border-top:2px solid #e5e7eb;font-weight:700}
-    tfoot td{padding:10px 12px}
-    .paid-y{color:#166534;font-weight:600}
-    .paid-n{color:#9ca3af}
-    .empty{text-align:center;padding:40px 0;color:#9ca3af;font-size:14px}
+    .card{background:#fff;border-radius:14px;padding:0;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:20px;overflow:hidden}
     .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
     @media(max-width:680px){.summary-grid{grid-template-columns:repeat(2,1fr)}}
-    .summary-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.07);text-align:center}
-    .s-label{font-size:12px;color:#6b7280;margin-bottom:6px}
-    .s-val{font-size:22px;font-weight:800;color:#1a1f36}
-    .s-sub{font-size:12px;color:#9ca3af;margin-top:2px}
+    .sc{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.07);text-align:center}
+    .sl{font-size:12px;color:#6b7280;margin-bottom:6px}
+    .sv{font-size:22px;font-weight:800}
+    .ss{font-size:12px;color:#9ca3af;margin-top:2px}
+    .tw{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:13px;min-width:600px}
+    thead tr{background:#1a1f36}
+    thead th{padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#fff;white-space:nowrap;border-right:1px solid rgba(255,255,255,.1)}
+    thead th:last-child{border-right:none}
+    thead th.left{text-align:left}
+    tbody td{padding:9px 12px;border-bottom:1px solid #f3f4f6;border-right:1px solid #f3f4f6;white-space:nowrap}
+    tbody td:last-child{border-right:none}
+    tbody tr:hover{background:#f8f9fc}
+    td.center{text-align:center}
+    td.right{text-align:right}
+    td.mark{text-align:center;font-size:15px;color:#1d4ed8;font-weight:700}
+    .subtotal-row td{background:#f1f5f9;font-weight:700;font-size:13px;border-top:2px solid #cbd5e1}
+    .total-row td{background:#1a1f36;color:#fff;font-weight:700;font-size:13px;border-top:2px solid #4f7cff}
+    .total-row td.mark{color:#93c5fd}
+    .cost-label{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .c-op{background:#dbeafe;color:#1d4ed8}
+    .c-pg{background:#ede9fe;color:#6d28d9}
+    .c-car{background:#dcfce7;color:#166534}
+    .c-tr{background:#fef9c3;color:#854d0e}
+    .empty{text-align:center;padding:60px;color:#9ca3af;font-size:15px}
 
     @media print {
-      header,.ph .pa,button{display:none!important}
+      header,.ph .pa{display:none!important}
       body{background:#fff}
       .container{padding:0}
-      .card{box-shadow:none;border:1px solid #e5e7eb;break-inside:avoid}
+      .card{box-shadow:none;border:1px solid #e5e7eb}
       .summary-grid{break-inside:avoid}
     }
   </style>
@@ -76,87 +81,240 @@
     <div class="pt">동호회 전체 보고서</div>
     <div class="pa">
       <a class="btn-n" href="/club">← 목록</a>
+      <button class="btn-excel" id="excelBtn" onclick="downloadExcel()" disabled>📊 엑셀 다운로드</button>
       <button class="btn-print" onclick="window.print()">인쇄</button>
     </div>
   </div>
 
-  <!-- 요약 -->
   <div class="summary-grid" id="summaryGrid">
-    <div class="summary-card"><div class="s-label">총 회원 수</div><div class="s-val" id="sTotalMembers">-</div></div>
-    <div class="summary-card"><div class="s-label">월 활동비 합계</div><div class="s-val" id="sTotalFee">-</div><div class="s-sub">원/월</div></div>
-    <div class="summary-card"><div class="s-label">미지급 지원금</div><div class="s-val" id="sTotalSupport">-</div><div class="s-sub">원 (일시)</div></div>
-    <div class="summary-card"><div class="s-label">활성 동호회</div><div class="s-val" id="sTotalClubs">-</div></div>
+    <div class="sc"><div class="sl">총 회원 수</div><div class="sv" id="sTot">-</div></div>
+    <div class="sc"><div class="sl">활성 동호회</div><div class="sv" id="sClub">-</div></div>
+    <div class="sc"><div class="sl">월 활동비 합계</div><div class="sv" id="sFee">-</div><div class="ss">원/월</div></div>
+    <div class="sc"><div class="sl">미지급 지원금</div><div class="sv" id="sSupport">-</div><div class="ss">원</div></div>
   </div>
 
-  <!-- cost_type별 테이블 -->
-  <div id="reportContent"><div class="empty">로딩 중...</div></div>
+  <div class="card">
+    <div class="tw">
+      <table id="reportTable">
+        <thead id="reportHead"></thead>
+        <tbody id="reportBody"><tr><td colspan="10"><div class="empty">로딩 중...</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
-var COST_LABELS = { '운영':'운영', '판관':'판관', '자동차':'자동차', '운송':'운송' };
-var COST_CLASSES= { '운영':'ct-op', '판관':'ct-pg', '자동차':'ct-car', '운송':'ct-tr' };
+var COST_ORDER = ['운영','자동차','운송','판관'];
+var COST_CLS   = { '운영':'c-op','자동차':'c-car','운송':'c-tr','판관':'c-pg' };
+var rawData = [], clubs = [], pivotData = {};
 
-function esc(s){return String(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fmtMoney(n){return Number(n||0).toLocaleString();}
+function esc(s){return String(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function today(){return new Date().toISOString().slice(0,10);}
 
 async function loadReport() {
   var res = await fetch('/api/club/admin/report');
   var data = await res.json();
-  if (!data.success) { document.getElementById('reportContent').innerHTML='<div class="empty">'+esc(data.message)+'</div>'; return; }
-  var rows = data.data;
+  if (!data.success) {
+    document.getElementById('reportBody').innerHTML = '<tr><td colspan="10"><div class="empty">'+esc(data.message)+'</div></td></tr>';
+    return;
+  }
+  rawData = data.data || [];
+  buildPivot();
+  renderSummary();
+  renderTable();
+  document.getElementById('excelBtn').disabled = false;
+}
 
-  // 요약
-  var empSet = new Set(rows.map(function(r){return r.emp_no;}));
-  var clubSet = new Set(rows.map(function(r){return r.club_id;}));
-  var totalFee = rows.reduce(function(s,r){return s+Number(r.monthly_fee||0);},0);
-  var totalSupport = rows.reduce(function(s,r){return s+Number(r.support_amt||0);},0);
-  document.getElementById('sTotalMembers').textContent = empSet.size;
-  document.getElementById('sTotalFee').textContent = fmtMoney(totalFee);
-  document.getElementById('sTotalSupport').textContent = fmtMoney(totalSupport);
-  document.getElementById('sTotalClubs').textContent = clubSet.size;
+function buildPivot() {
+  var clubSet = new Set();
+  rawData.forEach(function(r){ clubSet.add(r.club_name); });
+  clubs = Array.from(clubSet).sort();
 
-  // cost_type별 그룹
-  var grouped = {};
-  rows.forEach(function(r){
-    var ct = r.cost_type || '운영';
-    if (!grouped[ct]) grouped[ct] = [];
-    grouped[ct].push(r);
+  var empMap = {};
+  rawData.forEach(function(r){
+    if (!empMap[r.emp_no]) {
+      empMap[r.emp_no] = {
+        emp_no: r.emp_no, name: r.name,
+        dept_name: r.dept_name || '-', position: r.position || '-',
+        cost_type: r.cost_type || '운영',
+        clubMap: {}, monthly_fee: 0, support_amt: 0,
+      };
+    }
+    empMap[r.emp_no].clubMap[r.club_name] = true;
+    empMap[r.emp_no].monthly_fee += Number(r.monthly_fee || 0);
+    empMap[r.emp_no].support_amt += Number(r.support_amt || 0);
   });
 
-  var order = ['운영','판관','자동차','운송'];
-  var html = '';
-  order.forEach(function(ct) {
-    if (!grouped[ct] || !grouped[ct].length) return;
-    var list = grouped[ct];
-    var subFee = list.reduce(function(s,r){return s+Number(r.monthly_fee||0);},0);
-    var subSup = list.reduce(function(s,r){return s+Number(r.support_amt||0);},0);
-    html += '<div class="card">';
-    html += '<div class="card-title"><span><span class="ct-cost '+(COST_CLASSES[ct]||'')+'">'+COST_LABELS[ct]+'</span> &nbsp;'+list.length+'건</span><span style="font-size:13px;font-weight:400;color:#6b7280;">활동비 합계 '+fmtMoney(subFee)+'원/월 · 지원금 '+fmtMoney(subSup)+'원</span></div>';
-    html += '<div class="tw"><table>';
-    html += '<thead><tr><th>사번</th><th>성명</th><th>부서</th><th>직급</th><th>동호회명</th><th>가입일</th><th>지원금 대상월</th><th>지원금 지급</th><th class="num">월 활동비</th><th class="num">지원금</th></tr></thead>';
-    html += '<tbody>';
-    list.forEach(function(r) {
-      html += '<tr>' +
-        '<td>'+esc(r.emp_no)+'</td>' +
-        '<td><strong>'+esc(r.name)+'</strong></td>' +
-        '<td>'+esc(r.dept_name||'-')+'</td>' +
-        '<td>'+esc(r.position||'-')+'</td>' +
-        '<td>'+esc(r.club_name)+'</td>' +
-        '<td>'+String(r.join_date||'').slice(0,10)+'</td>' +
-        '<td>'+esc(r.support_month||'-')+'</td>' +
-        '<td>'+(r.support_paid ? '<span class="paid-y">지급</span>' : '<span class="paid-n">미지급</span>')+'</td>' +
-        '<td class="num">'+fmtMoney(r.monthly_fee)+'</td>' +
-        '<td class="num">'+fmtMoney(r.support_amt)+'</td>' +
-      '</tr>';
+  var employees = Object.values(empMap).sort(function(a,b){
+    var co = COST_ORDER.indexOf(a.cost_type) - COST_ORDER.indexOf(b.cost_type);
+    if (co !== 0) return co;
+    if (a.dept_name < b.dept_name) return -1;
+    if (a.dept_name > b.dept_name) return 1;
+    return 0;
+  });
+
+  // group by cost_type
+  var groups = {};
+  employees.forEach(function(e){
+    var ct = e.cost_type;
+    if (!groups[ct]) groups[ct] = [];
+    groups[ct].push(e);
+  });
+
+  pivotData = { clubs, employees, groups };
+}
+
+function renderSummary() {
+  var empSet = new Set(rawData.map(function(r){return r.emp_no;}));
+  var clubSet = new Set(rawData.map(function(r){return r.club_id;}));
+  var totalFee = rawData.reduce(function(s,r){return s+Number(r.monthly_fee||0);},0);
+  var totalSup = rawData.reduce(function(s,r){return s+Number(r.support_amt||0);},0);
+  document.getElementById('sTot').textContent     = empSet.size + '명';
+  document.getElementById('sClub').textContent    = clubSet.size + '개';
+  document.getElementById('sFee').textContent     = fmtMoney(totalFee);
+  document.getElementById('sSupport').textContent = fmtMoney(totalSup);
+}
+
+function renderTable() {
+  var cl = pivotData.clubs;
+  var groups = pivotData.groups;
+
+  // 헤더
+  var headHtml = '<tr>' +
+    '<th class="left" style="min-width:90px">소속</th>' +
+    '<th style="min-width:60px">직위</th>' +
+    '<th style="min-width:70px">성명</th>' +
+    '<th style="min-width:60px">비용구분</th>';
+  cl.forEach(function(c){ headHtml += '<th style="min-width:70px">'+esc(c)+'</th>'; });
+  headHtml += '<th style="min-width:80px">비고(월)</th></tr>';
+  document.getElementById('reportHead').innerHTML = headHtml;
+
+  var bodyHtml = '';
+  var grandFee = 0;
+  var grandClubCnt = {};
+  cl.forEach(function(c){ grandClubCnt[c] = 0; });
+
+  COST_ORDER.forEach(function(ct){
+    var list = groups[ct];
+    if (!list || !list.length) return;
+
+    var subFee = 0;
+    var subClubCnt = {};
+    cl.forEach(function(c){ subClubCnt[c] = 0; });
+
+    list.forEach(function(e){
+      bodyHtml += '<tr>';
+      bodyHtml += '<td>'+esc(e.dept_name)+'</td>';
+      bodyHtml += '<td class="center">'+esc(e.position)+'</td>';
+      bodyHtml += '<td><strong>'+esc(e.name)+'</strong></td>';
+      bodyHtml += '<td class="center"><span class="cost-label '+esc(COST_CLS[ct]||'')+'">'+esc(ct)+'</span></td>';
+      cl.forEach(function(c){
+        if (e.clubMap[c]) {
+          bodyHtml += '<td class="mark">○</td>';
+          subClubCnt[c]++;
+          grandClubCnt[c]++;
+        } else {
+          bodyHtml += '<td></td>';
+        }
+      });
+      bodyHtml += '<td class="right">'+(e.monthly_fee ? fmtMoney(e.monthly_fee) : '-')+'</td>';
+      bodyHtml += '</tr>';
+      subFee += e.monthly_fee;
     });
-    html += '</tbody><tfoot><tr><td colspan="8" style="text-align:right;color:#6b7280;">소계</td>' +
-      '<td class="num">'+fmtMoney(subFee)+'</td>' +
-      '<td class="num">'+fmtMoney(subSup)+'</td>' +
-    '</tr></tfoot>';
-    html += '</table></div></div>';
+
+    grandFee += subFee;
+
+    // 소계 행
+    bodyHtml += '<tr class="subtotal-row">';
+    bodyHtml += '<td colspan="4" style="text-align:right;padding-right:16px;">'+ct+'소계</td>';
+    cl.forEach(function(c){
+      bodyHtml += '<td class="center" style="color:#374151;">'+subClubCnt[c]+'명</td>';
+    });
+    bodyHtml += '<td class="right">'+fmtMoney(subFee)+'</td>';
+    bodyHtml += '</tr>';
   });
 
-  document.getElementById('reportContent').innerHTML = html || '<div class="empty">데이터가 없습니다.</div>';
+  // 합계 행
+  bodyHtml += '<tr class="total-row">';
+  bodyHtml += '<td colspan="4" style="text-align:right;padding-right:16px;">합 계</td>';
+  cl.forEach(function(c){
+    bodyHtml += '<td class="center mark">'+grandClubCnt[c]+'명</td>';
+  });
+  bodyHtml += '<td class="right">'+fmtMoney(grandFee)+'</td>';
+  bodyHtml += '</tr>';
+
+  document.getElementById('reportBody').innerHTML = bodyHtml;
+}
+
+function downloadExcel() {
+  var cl = pivotData.clubs;
+  var groups = pivotData.groups;
+  var dateStr = today();
+
+  var aoa = [];
+
+  // 제목
+  aoa.push(['동호회 등록 현황']);
+  aoa.push([dateStr]);
+  aoa.push([]);
+
+  // 헤더
+  var header = ['소속','직위','성명','비용구분'];
+  cl.forEach(function(c){ header.push(c); });
+  header.push('비고(월)');
+  aoa.push(header);
+
+  var grandFee = 0;
+  var grandCnt = {};
+  cl.forEach(function(c){ grandCnt[c] = 0; });
+
+  COST_ORDER.forEach(function(ct){
+    var list = groups[ct];
+    if (!list || !list.length) return;
+
+    var subFee = 0;
+    var subCnt = {};
+    cl.forEach(function(c){ subCnt[c] = 0; });
+
+    list.forEach(function(e){
+      var row = [e.dept_name, e.position, e.name, ct];
+      cl.forEach(function(c){
+        if (e.clubMap[c]) { row.push('○'); subCnt[c]++; grandCnt[c]++; }
+        else row.push('');
+      });
+      row.push(e.monthly_fee || '');
+      aoa.push(row);
+      subFee += e.monthly_fee || 0;
+    });
+
+    grandFee += subFee;
+
+    // 소계
+    var subRow = ['','','',ct+'소계'];
+    cl.forEach(function(c){ subRow.push(subCnt[c]+'명'); });
+    subRow.push(subFee);
+    aoa.push(subRow);
+    aoa.push([]);
+  });
+
+  // 합계
+  var totalRow = ['','','','합 계'];
+  cl.forEach(function(c){ totalRow.push(grandCnt[c]+'명'); });
+  totalRow.push(grandFee);
+  aoa.push(totalRow);
+
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // 열 너비 설정
+  var colWidths = [14, 8, 8, 8];
+  cl.forEach(function(){ colWidths.push(10); });
+  colWidths.push(12);
+  ws['!cols'] = colWidths.map(function(w){ return { wch: w }; });
+
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '동호회등록현황');
+  XLSX.writeFile(wb, '동호회_등록현황_'+dateStr+'.xlsx');
 }
 
 loadReport();

@@ -202,6 +202,7 @@
 <div class="container">
   <div class="page-header">
     <div class="page-title">사용자 관리</div>
+    <a class="btn-nav" href="/main">← 메인 메뉴</a>
     <a class="btn-nav" href="/prog_auth">프로그램 접근권한 관리 →</a>
   </div>
 
@@ -319,10 +320,15 @@
   var allUsers = [];
 
   async function loadUsers() {
-    var res = await fetch('/api/users?_=' + Date.now());
-    if (!res.ok) { location.href = '/login'; return; }
-    allUsers = await res.json();
-    renderTable(allUsers);
+    try {
+      var res = await fetch('/api/users?_=' + Date.now());
+      if (res.status === 401) { location.href = '/login'; return; }
+      if (!res.ok) { document.getElementById('userTableBody').innerHTML = '<tr><td colspan="8"><div class="empty-state">사용자 목록을 불러오지 못했습니다. (서버 오류)</div></td></tr>'; return; }
+      allUsers = await res.json();
+      renderTable(allUsers);
+    } catch(e) {
+      document.getElementById('userTableBody').innerHTML = '<tr><td colspan="8"><div class="empty-state">사용자 목록을 불러오지 못했습니다.</div></td></tr>';
+    }
   }
 
   function renderTable(users) {

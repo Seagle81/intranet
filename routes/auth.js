@@ -7,13 +7,13 @@ router.get('/', function(req, res) {
   var user = req.session.user;
   if (!user) return res.redirect('/login');
   if (user.mustChangePw) return res.redirect('/change_password');
-  return res.redirect(user.role === 'admin' ? '/admin' : '/main');
+  return res.redirect('/main');
 });
 
 // 로그인 페이지
 router.get('/login', function(req, res) {
   var user = req.session.user;
-  if (user) return res.redirect(user.role === 'admin' ? '/admin' : '/main');
+  if (user) return res.redirect('/main');
   res.render('login', { error: '', empNo: '' });
 });
 
@@ -37,7 +37,7 @@ router.post('/login', async function(req, res) {
           mustChangePw: !!found.mustChangePw
         };
         if (found.mustChangePw) return res.redirect('/change_password');
-        return res.redirect(found.role === 'admin' ? '/admin' : '/main');
+        return res.redirect('/main');
       });
       return;
     }

@@ -28,6 +28,26 @@ const upload = multer({
 const auth = requireProgAuth('prc_club', 1);
 const auth2 = requireProgAuth('prc_club', 2);
 
+// ── 관리자 직접 등록 ──────────────────────────────────────────────────────────
+
+router.post('/admin/create', requireAdminApi, async function(req, res) {
+  try {
+    var { club_name, description, found_date } = req.body;
+    var members = req.body.members || [];
+    if (typeof members === 'string') { try { members = JSON.parse(members); } catch(e) { members = []; } }
+
+    if (!club_name) return res.json({ success: false, message: '동호회명을 입력하세요.' });
+    if (!members.length) return res.json({ success: false, message: '회원을 1명 이상 추가하세요.' });
+    if (!members.some(function(m) { return m.role === 'president'; }))
+      return res.json({ success: false, message: '회장(역할)을 지정하세요.' });
+
+    var clubId = await cf.adminCreateClub(club_name.trim(), description || '', found_date || null, members);
+    res.json({ success: true, message: '동호회가 등록되었습니다.', clubId });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
 // ── 목록/정보 ────────────────────────────────────────────────────────────────
 
 router.get('/list', auth, async function(req, res) {

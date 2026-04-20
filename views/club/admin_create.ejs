@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>동호회 직접 등록</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;background:#f0f2f5;font-family:'Segoe UI','Malgun Gothic',sans-serif;color:#1a1f36}
+    header{background:linear-gradient(135deg,#1a1f36,#2d3561);color:#fff;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(0,0,0,.3);position:sticky;top:0;z-index:100}
+    .hl{display:flex;align-items:center;gap:12px;font-size:16px;font-weight:600}
+    .hr{display:flex;align-items:center;gap:16px}
+    .ui{font-size:13px;color:rgba(255,255,255,.7)}
+    .btn-lo{padding:7px 16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:13px;text-decoration:none}
+    .sep{color:rgba(255,255,255,.4)}
+    .container{max-width:960px;margin:0 auto;padding:32px 16px}
+    .card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:20px}
+    .ct{font-size:15px;font-weight:700;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #eef0f5;display:flex;align-items:center;justify-content:space-between}
+    .fg{margin-bottom:0}
+    label.lbl{display:block;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+    label .req{color:#ef4444}
+    input[type=text],input[type=date],select,textarea{width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;color:#1a1f36;outline:none;background:#fafafa;transition:border-color .2s}
+    input[type=text]:focus,input[type=date]:focus,select:focus,textarea:focus{border-color:#4f7cff;background:#fff}
+    textarea{resize:vertical}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+    @media(max-width:600px){.grid2,.grid3{grid-template-columns:1fr}}
+
+    /* 일괄 추가 */
+    .bulk-wrap{display:grid;grid-template-columns:1fr 180px auto;gap:12px;align-items:end}
+    @media(max-width:640px){.bulk-wrap{grid-template-columns:1fr}}
+    .bulk-wrap textarea{min-height:90px;font-family:monospace;font-size:13px}
+
+    /* 회원 테이블 */
+    .tw{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead tr{background:#f8f9fc;border-bottom:2px solid #e5e7eb}
+    thead th{padding:9px 10px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+    tbody tr{border-bottom:1px solid #f3f4f6}
+    tbody tr:hover{background:#fafafa}
+    tbody td{padding:6px 8px}
+    tbody td input,tbody td select{padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:6px;font-size:13px;background:#fff;width:100%}
+    tbody td input:focus,tbody td select:focus{border-color:#4f7cff;outline:none}
+    .name-cell{font-size:13px;color:#374151;min-width:70px;padding:7px 10px;display:block}
+    .name-loading{color:#9ca3af}
+    .name-ok{color:#1a1f36;font-weight:500}
+    .name-err{color:#ef4444}
+    .btn-del{background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;padding:4px 8px;border-radius:4px}
+    .btn-del:hover{background:#fee2e2}
+    .seq{color:#9ca3af;font-size:12px;text-align:center;min-width:28px}
+
+    /* 역할 배지 색 */
+    option[value=president]{font-weight:700}
+
+    /* 버튼 */
+    .btn-add-row{padding:8px 16px;background:#fff;border:1.5px solid #4f7cff;border-radius:8px;color:#4f7cff;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+    .btn-add-row:hover{background:#eff3ff}
+    .btn-p{padding:10px 28px;background:linear-gradient(135deg,#4f7cff,#9b59b6);border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+    .btn-p:hover{opacity:.85}
+    .btn-p:disabled{opacity:.6;cursor:not-allowed}
+    .btn-cancel{padding:10px 20px;background:#f3f4f6;border:none;border-radius:8px;color:#374151;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
+    .btn-secondary{padding:8px 16px;background:#fff;border:1.5px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;cursor:pointer}
+    .btn-secondary:hover{background:#f3f4f6}
+    .btn-danger{padding:8px 14px;background:#fff;border:1.5px solid #fca5a5;border-radius:8px;color:#dc2626;font-size:13px;cursor:pointer}
+    .btn-danger:hover{background:#fef2f2}
+    .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+    .alert{padding:12px 14px;border-radius:8px;font-size:13px;margin-top:16px}
+    .alert-s{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+    .alert-e{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+    .badge-count{display:inline-flex;align-items:center;justify-content:center;background:#4f7cff;color:#fff;border-radius:20px;padding:1px 10px;font-size:12px;font-weight:700;margin-left:8px}
+    .hint{font-size:12px;color:#9ca3af;margin-top:5px}
+    .dup-warn{font-size:11px;color:#dc2626;margin-left:4px}
+    .excel-zone{margin-top:16px;padding-top:16px;border-top:1px solid #eef0f5;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .btn-excel{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#fff;border:1.5px solid #22c55e;border-radius:8px;color:#16a34a;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+    .btn-excel:hover{background:#f0fdf4}
+    .btn-excel input[type=file]{display:none}
+  </style>
+</head>
+<body>
+<header>
+  <div class="hl">
+    <a href="/main" style="color:inherit;text-decoration:none;">인트라넷</a>
+    <span class="sep">›</span>
+    <a href="/club" style="color:inherit;text-decoration:none;">동호회</a>
+    <span class="sep">›</span>
+    <span>기존 동호회 등록</span>
+  </div>
+  <div class="hr">
+    <span class="ui"><%= user.name %> (<%= user.empNo %>)</span>
+    <a class="btn-lo" href="/logout">로그아웃</a>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 동호회 기본 정보 -->
+  <div class="card">
+    <div class="ct">동호회 기본 정보</div>
+    <div class="grid2" style="margin-bottom:16px">
+      <div class="fg">
+        <label class="lbl">동호회명 <span class="req">*</span></label>
+        <input type="text" id="clubName" placeholder="예: 산악회" maxlength="50">
+      </div>
+      <div class="fg">
+        <label class="lbl">개설일 <span class="req">*</span></label>
+        <input type="date" id="foundDate">
+      </div>
+    </div>
+    <div class="fg">
+      <label class="lbl">소개</label>
+      <textarea id="desc" rows="2" placeholder="동호회 소개를 입력하세요."></textarea>
+    </div>
+  </div>
+
+  <!-- 회원 일괄 추가 -->
+  <div class="card">
+    <div class="ct">회원 일괄 추가</div>
+    <div class="bulk-wrap">
+      <div class="fg">
+        <label class="lbl">사번 목록</label>
+        <textarea id="bulkEmpNos" placeholder="사번을 한 줄에 하나씩 입력하세요.&#10;예)&#10;P00001&#10;P00002&#10;P00003"></textarea>
+        <div class="hint">줄바꿈·쉼표·공백으로 구분 가능</div>
+      </div>
+      <div class="fg">
+        <label class="lbl">공통 가입일 <span class="req">*</span></label>
+        <input type="date" id="bulkDate">
+        <div class="hint">텍스트 입력 및 엑셀 업로드 공통 적용</div>
+      </div>
+      <div class="fg" style="display:flex;flex-direction:column;gap:8px;justify-content:flex-end">
+        <button class="btn-add-row" onclick="bulkAdd()">텍스트 추가</button>
+        <button class="btn-secondary" onclick="clearAll()">전체 삭제</button>
+      </div>
+    </div>
+
+    <!-- 엑셀 업로드 -->
+    <div class="excel-zone">
+      <label class="btn-excel">
+        <span>📊 엑셀 파일 업로드</span>
+        <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="parseExcel(this)">
+      </label>
+      <div style="font-size:12px;color:#6b7280;line-height:1.6">
+        <strong>엑셀 형식:</strong> A열 = 사번 &nbsp;|&nbsp; B열 = 가입일(선택, YYYY-MM-DD)<br>
+        B열이 없으면 위 공통 가입일 적용 &nbsp;·&nbsp; 첫 행(헤더) 자동 건너뜀
+      </div>
+    </div>
+  </div>
+
+  <!-- 회원 목록 테이블 -->
+  <div class="card">
+    <div class="ct">
+      <span>회원 목록 <span class="badge-count" id="memberCount">0</span></span>
+      <button class="btn-add-row" onclick="addRow('','','member','')">+ 한 줄 추가</button>
+    </div>
+    <div class="tw">
+      <table id="memberTable">
+        <thead>
+          <tr>
+            <th style="width:36px">#</th>
+            <th style="min-width:110px">사번 <span class="req">*</span></th>
+            <th style="min-width:80px">이름</th>
+            <th style="min-width:100px">역할</th>
+            <th style="min-width:130px">가입일 <span class="req">*</span></th>
+            <th style="width:36px"></th>
+          </tr>
+        </thead>
+        <tbody id="memberBody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;color:#9ca3af;font-size:12px;">
+      * 회장 역할은 반드시 1명 지정 필요 · 중복 사번은 자동으로 무시됩니다.
+    </div>
+  </div>
+
+  <div id="alertMsg"></div>
+
+  <div class="form-actions">
+    <a class="btn-cancel" href="/club">취소</a>
+    <button class="btn-p" id="submitBtn" onclick="submitForm()">동호회 등록</button>
+  </div>
+</div>
+
+<script>
+var members = []; // { id, emp_no, name, role, join_date, nameStatus }
+var rowId = 0;
+var nameCache = {};
+
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+
+document.getElementById('bulkDate').value = today();
+document.getElementById('foundDate').value = today();
+
+function esc(s){
+  return String(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
+}
+
+function updateCount() {
+  document.getElementById('memberCount').textContent = members.length;
+}
+
+function render() {
+  updateCount();
+  var tbody = document.getElementById('memberBody');
+  if (!members.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:#9ca3af;">회원을 추가하세요.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = members.map(function(m, idx) {
+    var nameHtml = m.nameStatus === 'loading'
+      ? '<span class="name-cell name-loading">조회중…</span>'
+      : m.nameStatus === 'ok'
+        ? '<span class="name-cell name-ok">'+esc(m.name)+'</span>'
+        : m.nameStatus === 'err'
+          ? '<span class="name-cell name-err">미등록</span>'
+          : '<span class="name-cell name-loading">-</span>';
+    return '<tr data-id="'+m.id+'">' +
+      '<td class="seq">'+(idx+1)+'</td>' +
+      '<td><input type="text" value="'+esc(m.emp_no)+'" onblur="onEmpNoBlur(this,'+m.id+')" onchange="onEmpNoChange(this,'+m.id+')" placeholder="사번" style="min-width:100px"></td>' +
+      '<td>'+nameHtml+'</td>' +
+      '<td><select onchange="onRoleChange(this,'+m.id+')">' +
+        '<option value="member"'+(m.role==='member'?' selected':'')+'>회원</option>' +
+        '<option value="secretary"'+(m.role==='secretary'?' selected':'')+'>총무</option>' +
+        '<option value="president"'+(m.role==='president'?' selected':'')+'>회장</option>' +
+      '</select></td>' +
+      '<td><input type="date" value="'+esc(m.join_date)+'" onchange="onDateChange(this,'+m.id+')"></td>' +
+      '<td><button class="btn-del" onclick="removeRow('+m.id+')" title="삭제">×</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function addRow(empNo, name, role, joinDate) {
+  var id = ++rowId;
+  members.push({
+    id: id,
+    emp_no: empNo || '',
+    name: name || '',
+    role: role || 'member',
+    join_date: joinDate || document.getElementById('bulkDate').value || today(),
+    nameStatus: empNo ? (name ? 'ok' : 'loading') : ''
+  });
+  render();
+  if (empNo && !name) lookupName(id, empNo);
+}
+
+function removeRow(id) {
+  members = members.filter(function(m){ return m.id !== id; });
+  render();
+}
+
+function clearAll() {
+  if (members.length && !confirm('회원 목록을 모두 삭제하시겠습니까?')) return;
+  members = [];
+  render();
+}
+
+function onEmpNoChange(el, id) {
+  var m = members.find(function(m){ return m.id === id; });
+  if (!m) return;
+  m.emp_no = el.value.trim();
+  m.name = '';
+  m.nameStatus = '';
+}
+
+function onEmpNoBlur(el, id) {
+  var empNo = el.value.trim();
+  var m = members.find(function(m){ return m.id === id; });
+  if (!m) return;
+  m.emp_no = empNo;
+  if (!empNo) { m.nameStatus = ''; render(); return; }
+  lookupName(id, empNo);
+}
+
+function onRoleChange(el, id) {
+  var m = members.find(function(m){ return m.id === id; });
+  if (!m) return;
+  m.role = el.value;
+}
+
+function onDateChange(el, id) {
+  var m = members.find(function(m){ return m.id === id; });
+  if (!m) return;
+  m.join_date = el.value;
+}
+
+async function lookupName(id, empNo) {
+  var m = members.find(function(m){ return m.id === id; });
+  if (!m) return;
+  if (nameCache[empNo]) {
+    m.name = nameCache[empNo];
+    m.nameStatus = 'ok';
+    render();
+    return;
+  }
+  m.nameStatus = 'loading';
+  render();
+  try {
+    var res = await fetch('/api/club/user/' + encodeURIComponent(empNo));
+    var data = await res.json();
+    var mx = members.find(function(m){ return m.id === id; });
+    if (!mx) return;
+    if (data.found) {
+      mx.name = data.name;
+      mx.nameStatus = 'ok';
+      nameCache[empNo] = data.name;
+    } else {
+      mx.name = '';
+      mx.nameStatus = 'err';
+    }
+  } catch(e) {
+    var mx = members.find(function(m){ return m.id === id; });
+    if (mx) mx.nameStatus = 'err';
+  }
+  render();
+}
+
+function parseExcel(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var bulkDate = document.getElementById('bulkDate').value || today();
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (!rows.length) { alert('데이터가 없습니다.'); return; }
+
+      // 첫 행이 헤더인지 판단 (사번 셀이 숫자가 아니고 텍스트면 헤더로 간주)
+      var startRow = 0;
+      var firstCell = String(rows[0][0] || '').trim();
+      if (firstCell && !/^[A-Za-z0-9]+$/.test(firstCell) || /사번|emp|사원|번호/i.test(firstCell)) {
+        startRow = 1;
+      }
+
+      var existing = new Set(members.map(function(m){ return m.emp_no; }));
+      var added = 0, skipped = 0;
+
+      for (var i = startRow; i < rows.length; i++) {
+        var row = rows[i];
+        var empNo = String(row[0] || '').trim();
+        if (!empNo) continue;
+
+        // B열 가입일 파싱
+        var joinDate = bulkDate;
+        if (row[1]) {
+          if (row[1] instanceof Date) {
+            joinDate = row[1].toISOString().slice(0, 10);
+          } else {
+            var ds = String(row[1]).trim().replace(/\./g, '-');
+            if (/^\d{8}$/.test(ds)) ds = ds.slice(0,4)+'-'+ds.slice(4,6)+'-'+ds.slice(6,8);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(ds)) joinDate = ds;
+          }
+        }
+
+        if (existing.has(empNo)) { skipped++; continue; }
+        existing.add(empNo);
+        addRow(empNo, '', 'member', joinDate);
+        added++;
+      }
+
+      input.value = '';
+      var msg = added + '명 추가됨';
+      if (skipped) msg += ' (중복 ' + skipped + '명 제외)';
+      alert(msg);
+    } catch(err) {
+      alert('엑셀 파일 읽기 오류: ' + err.message);
+      input.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function bulkAdd() {
+  var raw = document.getElementById('bulkEmpNos').value;
+  var joinDate = document.getElementById('bulkDate').value;
+  if (!joinDate) { alert('공통 가입일을 선택하세요.'); return; }
+  if (!raw.trim()) { alert('사번을 입력하세요.'); return; }
+
+  var empNos = raw.split(/[\n,\s]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  var existing = new Set(members.map(function(m){ return m.emp_no; }));
+  var added = 0;
+
+  for (var empNo of empNos) {
+    if (existing.has(empNo)) continue;
+    existing.add(empNo);
+    addRow(empNo, '', 'member', joinDate);
+    added++;
+  }
+
+  document.getElementById('bulkEmpNos').value = '';
+  if (added === 0) alert('새로 추가된 사번이 없습니다. (이미 목록에 있거나 입력값이 없습니다.)');
+}
+
+async function submitForm() {
+  var alertEl = document.getElementById('alertMsg');
+  alertEl.className = '';
+  alertEl.textContent = '';
+
+  var clubName = document.getElementById('clubName').value.trim();
+  var desc     = document.getElementById('desc').value.trim();
+  var foundDate = document.getElementById('foundDate').value;
+
+  if (!clubName) { showAlert('동호회명을 입력하세요.', false); return; }
+  if (!foundDate) { showAlert('개설일을 입력하세요.', false); return; }
+  if (!members.length) { showAlert('회원을 1명 이상 추가하세요.', false); return; }
+
+  var emptyEmpNo = members.filter(function(m){ return !m.emp_no; });
+  if (emptyEmpNo.length) { showAlert('사번이 비어있는 행이 있습니다.', false); return; }
+
+  var emptyDate = members.filter(function(m){ return !m.join_date; });
+  if (emptyDate.length) { showAlert('가입일이 비어있는 행이 있습니다.', false); return; }
+
+  var hasPresident = members.some(function(m){ return m.role === 'president'; });
+  if (!hasPresident) { showAlert('회장 역할을 지정하세요.', false); return; }
+
+  var errNames = members.filter(function(m){ return m.nameStatus === 'err'; });
+  if (errNames.length) {
+    if (!confirm('미등록 사번이 ' + errNames.length + '명 있습니다. 그래도 등록하시겠습니까?')) return;
+  }
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '등록 중...';
+
+  var payload = {
+    club_name: clubName,
+    description: desc,
+    found_date: foundDate,
+    members: members.map(function(m) {
+      return { emp_no: m.emp_no, role: m.role, join_date: m.join_date };
+    })
+  };
+
+  try {
+    var res = await fetch('/api/club/admin/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    var data = await res.json();
+    btn.disabled = false;
+    btn.textContent = '동호회 등록';
+
+    if (data.success) {
+      showAlert(data.message, true);
+      setTimeout(function() { location.href = '/club/' + data.clubId; }, 1500);
+    } else {
+      showAlert(data.message, false);
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '동호회 등록';
+    showAlert('오류가 발생했습니다.', false);
+  }
+}
+
+function showAlert(msg, ok) {
+  var el = document.getElementById('alertMsg');
+  el.className = 'alert ' + (ok ? 'alert-s' : 'alert-e');
+  el.textContent = msg;
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// 초기 빈 행 3개
+addRow(); addRow(); addRow();
+</script>
+</body>
+</html>

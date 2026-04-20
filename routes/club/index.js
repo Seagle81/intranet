@@ -13,6 +13,10 @@ router.get('/', auth, async function(req, res, next) {
   } catch (e) { next(e); }
 });
 
+router.get('/admin/create', requireAdmin, function(req, res) {
+  res.render('club/admin_create', { user: req.session.user });
+});
+
 router.get('/found', auth, function(req, res) {
   res.render('club/found', { user: req.session.user });
 });
