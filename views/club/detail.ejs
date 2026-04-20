@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= club.club_name %> - 동호회</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;background:#f0f2f5;font-family:'Segoe UI','Malgun Gothic',sans-serif;color:#1a1f36}
+    header{background:linear-gradient(135deg,#1a1f36,#2d3561);color:#fff;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(0,0,0,.3);position:sticky;top:0;z-index:100}
+    .hl{display:flex;align-items:center;gap:12px;font-size:16px;font-weight:600}
+    .hr{display:flex;align-items:center;gap:16px}
+    .ui{font-size:13px;color:rgba(255,255,255,.7)}
+    .btn-lo{padding:7px 16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:13px;text-decoration:none}
+    .btn-lo:hover{background:rgba(255,255,255,.2)}
+    .sep{color:rgba(255,255,255,.4)}
+    .container{max-width:1000px;margin:0 auto;padding:32px 16px}
+    .card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:20px}
+    .club-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .club-title{font-size:24px;font-weight:800;margin-bottom:8px}
+    .club-desc{color:#6b7280;font-size:14px;line-height:1.6;margin-bottom:12px}
+    .club-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
+    .meta-item{display:inline-flex;align-items:center;gap:4px;background:#f3f4f6;border-radius:6px;padding:4px 12px;color:#374151}
+    .header-actions{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0}
+    .btn-n{padding:8px 16px;background:#fff;border:1.5px solid #e5e7eb;border-radius:8px;color:#374151;font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;white-space:nowrap;transition:background .2s}
+    .btn-n:hover{background:#f3f4f6}
+    .btn-p{padding:8px 18px;background:linear-gradient(135deg,#4f7cff,#9b59b6);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+    .btn-p:hover{opacity:.85}
+    .btn-d{padding:8px 16px;background:#fff;border:1.5px solid #fca5a5;border-radius:8px;color:#dc2626;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+    .btn-d:hover{background:#fef2f2}
+    .tabs{display:flex;gap:0;border-bottom:2px solid #e5e7eb;margin-bottom:20px}
+    .tab{padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:#6b7280;transition:all .2s}
+    .tab.active{color:#4f7cff;border-bottom-color:#4f7cff;font-weight:600}
+    .tab-content{display:none}.tab-content.active{display:block}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    thead tr{background:#f8f9fc;border-bottom:2px solid #e5e7eb}
+    thead th{padding:10px 14px;text-align:left;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+    tbody tr{border-bottom:1px solid #f3f4f6}
+    tbody tr:hover{background:#f8f9fc}
+    tbody td{padding:12px 14px}
+    .role-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600}
+    .role-p{background:#ede9fe;color:#6d28d9}
+    .role-s{background:#dbeafe;color:#1d4ed8}
+    .role-m{background:#f3f4f6;color:#374151}
+    .notice-item{padding:14px 0;border-bottom:1px solid #f3f4f6}
+    .notice-item:last-child{border-bottom:none}
+    .notice-title{font-size:15px;font-weight:600;margin-bottom:4px}
+    .notice-meta{font-size:12px;color:#9ca3af}
+    .notice-content{font-size:14px;color:#374151;margin-top:8px;line-height:1.6;white-space:pre-wrap}
+    .empty{text-align:center;padding:40px 0;color:#9ca3af;font-size:14px}
+    .notice-form{display:grid;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #eef0f5}
+    .notice-form input,.notice-form textarea{padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;outline:none;background:#fafafa;width:100%}
+    .notice-form input:focus,.notice-form textarea:focus{border-color:#4f7cff;background:#fff}
+    .notice-form textarea{resize:vertical;min-height:80px}
+    .section-title{font-size:14px;font-weight:600;margin-bottom:12px;color:#374151}
+    .apply-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f3f4f6;font-size:14px}
+    .apply-row:last-child{border-bottom:none}
+    .acts{display:flex;gap:6px}
+    .bs{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid transparent}
+    .ba{background:#fff;border-color:#4f7cff;color:#4f7cff}.ba:hover{background:#eff3ff}
+    .br{background:#fff;border-color:#fca5a5;color:#dc2626}.br:hover{background:#fef2f2}
+    .tw{overflow-x:auto}
+    .alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px}
+    .alert-s{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+    .alert-e{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+  </style>
+</head>
+<body>
+<header>
+  <div class="hl">
+    <a href="/main" style="color:inherit;text-decoration:none;">인트라넷</a>
+    <span class="sep">›</span>
+    <a href="/club" style="color:inherit;text-decoration:none;">동호회</a>
+    <span class="sep">›</span>
+    <span><%= club.club_name %></span>
+  </div>
+  <div class="hr">
+    <span class="ui"><%= user.name %> (<%= user.empNo %>)</span>
+    <a class="btn-lo" href="/logout">로그아웃</a>
+  </div>
+</header>
+
+<div class="container">
+  <!-- 동호회 정보 -->
+  <div class="card">
+    <div class="club-header">
+      <div>
+        <div class="club-title"><%= club.club_name %></div>
+        <div class="club-desc"><%= club.description || '소개글이 없습니다.' %></div>
+        <div class="club-meta">
+          <% if (club.president_name) { %><span class="meta-item">회장 <%= club.president_name %></span><% } %>
+          <% if (club.secretary_name) { %><span class="meta-item">총무 <%= club.secretary_name %></span><% } %>
+          <% if (club.found_date) { %><span class="meta-item"><%= String(club.found_date).slice(0,10) %> 개설</span><% } %>
+          <% if (club.rules_file) { %>
+            <a class="meta-item" href="<%= club.rules_file %>" target="_blank" style="text-decoration:none;color:#4f7cff;">회칙 다운로드</a>
+          <% } %>
+        </div>
+      </div>
+      <div class="header-actions" id="headerActions"></div>
+    </div>
+  </div>
+
+  <!-- 탭 -->
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('members')">회원 목록</div>
+      <div class="tab" onclick="switchTab('notices')">공지사항</div>
+      <div class="tab" id="tabApply" style="display:none" onclick="switchTab('apply')">가입 신청 관리</div>
+    </div>
+
+    <!-- 회원 목록 -->
+    <div class="tab-content active" id="tab-members">
+      <div class="tw">
+        <table>
+          <thead><tr><th>이름</th><th>사번</th><th>부서</th><th>직급</th><th>역할</th><th>가입일</th></tr></thead>
+          <tbody id="membersBody"><tr><td colspan="6"><div class="empty">로딩 중...</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 공지사항 -->
+    <div class="tab-content" id="tab-notices">
+      <div id="noticesList"><div class="empty">로딩 중...</div></div>
+      <div id="noticeForm" style="display:none">
+        <div class="notice-form">
+          <div class="section-title">공지사항 등록</div>
+          <input type="text" id="noticeTitle" placeholder="제목">
+          <textarea id="noticeContent" placeholder="내용 (선택)"></textarea>
+          <button class="btn-p" style="justify-self:end;" onclick="submitNotice()">등록</button>
+          <div id="noticeAlert"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 가입 신청 관리 -->
+    <div class="tab-content" id="tab-apply">
+      <div id="applyList"><div class="empty">로딩 중...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var CLUB_ID = <%- club.id %>;
+var MY_EMP  = '<%- user.empNo %>';
+var IS_ADMIN = <%- user.role === 'admin' ? 'true' : 'false' %>;
+var PRES_EMP = '<%- club.president_emp_no || '' %>';
+var SEC_EMP  = '<%- club.secretary_emp_no || '' %>';
+var myRole = null; // 'president','secretary','member' or null
+var membersData = [];
+var noticesData = [];
+
+function esc(s){return String(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active');});
+  event.target.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name === 'apply') loadApply();
+}
+
+async function loadData() {
+  var res = await fetch('/api/club/'+CLUB_ID);
+  var data = await res.json();
+  if (!data.success) return;
+  membersData = data.data.members;
+  noticesData = data.data.notices;
+
+  // 내 역할 파악
+  var me = membersData.find(function(m){return m.emp_no === MY_EMP;});
+  myRole = me ? me.role : null;
+
+  renderMembers();
+  renderNotices();
+  renderActions();
+}
+
+function renderMembers() {
+  var tbody = document.getElementById('membersBody');
+  if (!membersData.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty">회원이 없습니다.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = membersData.map(function(m) {
+    var rLabel = m.role === 'president' ? '회장' : m.role === 'secretary' ? '총무' : '회원';
+    var rClass = m.role === 'president' ? 'role-p' : m.role === 'secretary' ? 'role-s' : 'role-m';
+    return '<tr>' +
+      '<td><strong>'+esc(m.name)+'</strong></td>' +
+      '<td>'+esc(m.emp_no)+'</td>' +
+      '<td>'+esc(m.dept_name||'-')+'</td>' +
+      '<td>'+esc(m.position||'-')+'</td>' +
+      '<td><span class="role-badge '+rClass+'">'+rLabel+'</span></td>' +
+      '<td>'+String(m.join_date||'').slice(0,10)+'</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderNotices() {
+  var el = document.getElementById('noticesList');
+  if (!noticesData.length) {
+    el.innerHTML = '<div class="empty">공지사항이 없습니다.</div>';
+  } else {
+    el.innerHTML = noticesData.map(function(n) {
+      return '<div class="notice-item">' +
+        '<div class="notice-title">'+esc(n.title)+'</div>' +
+        '<div class="notice-meta">'+esc(n.author_name)+' · '+String(n.reg_date).slice(0,10)+'</div>' +
+        (n.content ? '<div class="notice-content">'+esc(n.content)+'</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+}
+
+function renderActions() {
+  var el = document.getElementById('headerActions');
+  var btns = [];
+  if (myRole) {
+    btns.push('<button class="btn-d" onclick="leaveClub()">탈퇴하기</button>');
+  } else {
+    btns.push('<button class="btn-p" onclick="joinClub()">가입 신청</button>');
+  }
+  el.innerHTML = btns.join('');
+
+  // 공지 등록 폼 (회장/총무/관리자)
+  if (myRole === 'president' || myRole === 'secretary' || IS_ADMIN) {
+    document.getElementById('noticeForm').style.display = 'block';
+  }
+
+  // 가입 신청 탭 (회장/총무/관리자)
+  if (myRole === 'president' || myRole === 'secretary' || IS_ADMIN) {
+    document.getElementById('tabApply').style.display = 'inline-block';
+  }
+}
+
+async function joinClub() {
+  if (!confirm('가입 신청을 하시겠습니까?')) return;
+  var res = await fetch('/api/club/join', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({clubId: CLUB_ID})
+  });
+  var d = await res.json();
+  alert(d.message);
+}
+
+async function leaveClub() {
+  if (!confirm('탈퇴하시겠습니까? 탈퇴 후 재가입하려면 다시 신청해야 합니다.')) return;
+  var res = await fetch('/api/club/leave', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({clubId: CLUB_ID})
+  });
+  var d = await res.json();
+  alert(d.message);
+  if (d.success) location.href = '/club';
+}
+
+async function submitNotice() {
+  var title = document.getElementById('noticeTitle').value.trim();
+  var content = document.getElementById('noticeContent').value.trim();
+  var alertEl = document.getElementById('noticeAlert');
+  alertEl.className = '';
+  alertEl.textContent = '';
+  if (!title) { alertEl.className = 'alert alert-e'; alertEl.textContent = '제목을 입력하세요.'; return; }
+  var res = await fetch('/api/club/'+CLUB_ID+'/notice', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({title, content})
+  });
+  var d = await res.json();
+  if (d.success) {
+    alertEl.className = 'alert alert-s';
+    alertEl.textContent = d.message;
+    document.getElementById('noticeTitle').value = '';
+    document.getElementById('noticeContent').value = '';
+    loadData();
+  } else {
+    alertEl.className = 'alert alert-e';
+    alertEl.textContent = d.message;
+  }
+}
+
+async function loadApply() {
+  var el = document.getElementById('applyList');
+  var res = await fetch('/api/club/'+CLUB_ID+'/join/pending');
+  var data = await res.json();
+  if (!data.success) { el.innerHTML = '<div class="empty">'+esc(data.message)+'</div>'; return; }
+  if (!data.data.length) { el.innerHTML = '<div class="empty">대기 중인 가입 신청이 없습니다.</div>'; return; }
+  el.innerHTML = data.data.map(function(a) {
+    return '<div class="apply-row">' +
+      '<div>' +
+        '<strong>'+esc(a.name)+'</strong> ('+esc(a.emp_no)+')' +
+        (a.dept_name ? ' · '+esc(a.dept_name) : '') +
+        (a.position ? ' '+esc(a.position) : '') +
+        '<br><small style="color:#9ca3af;">신청일 '+String(a.apply_date).slice(0,10)+'</small>' +
+      '</div>' +
+      '<div class="acts">' +
+        '<button class="bs ba" onclick="approveJoin('+a.id+')">승인</button>' +
+        '<button class="bs br" onclick="rejectJoin('+a.id+')">반려</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function approveJoin(id) {
+  if (!confirm('가입을 승인하시겠습니까?')) return;
+  var res = await fetch('/api/club/join/'+id+'/approve', {method:'POST'});
+  var d = await res.json();
+  alert(d.message);
+  if (d.success) { loadData(); loadApply(); }
+}
+
+async function rejectJoin(id) {
+  var reason = prompt('반려 사유를 입력하세요 (선택):') || '';
+  var res = await fetch('/api/club/join/'+id+'/reject', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({reason})
+  });
+  var d = await res.json();
+  alert(d.message);
+  if (d.success) loadApply();
+}
+
+loadData();
+</script>
+</body>
+</html>

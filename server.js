@@ -28,6 +28,10 @@ app.use('/api/reset_password', require('./routes/api/resetPw'));
 app.use('/api/prog_auth', require('./routes/api/progAuth'));
 app.use('/', require('./routes/progAuth'));
 
+// ── 동호회 ─────────────────────────────────────────────────────────────────
+app.use('/club', require('./routes/club/index'));
+app.use('/api/club', require('./routes/api/club'));
+
 // ── MPOMS 프로그램 ─────────────────────────────────────────────────────────
 app.use('/mpoms/vesselci', require('./routes/mpoms/vesselci'));
 

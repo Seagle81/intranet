@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>동호회 개설 신청</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;background:#f0f2f5;font-family:'Segoe UI','Malgun Gothic',sans-serif;color:#1a1f36}
+    header{background:linear-gradient(135deg,#1a1f36,#2d3561);color:#fff;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(0,0,0,.3);position:sticky;top:0;z-index:100}
+    .hl{display:flex;align-items:center;gap:12px;font-size:16px;font-weight:600}
+    .hr{display:flex;align-items:center;gap:16px}
+    .ui{font-size:13px;color:rgba(255,255,255,.7)}
+    .btn-lo{padding:7px 16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:13px;text-decoration:none}
+    .btn-lo:hover{background:rgba(255,255,255,.2)}
+    .sep{color:rgba(255,255,255,.4)}
+    .container{max-width:640px;margin:0 auto;padding:32px 16px}
+    .card{background:#fff;border-radius:14px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+    .card-title{font-size:18px;font-weight:700;margin-bottom:4px}
+    .card-sub{font-size:13px;color:#6b7280;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #eef0f5}
+    .fg{margin-bottom:18px}
+    .fg label{display:block;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+    .fg label .req{color:#ef4444}
+    .fg input,.fg textarea,.fg select{width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;color:#1a1f36;outline:none;background:#fafafa;transition:border-color .2s}
+    .fg input:focus,.fg textarea:focus,.fg select:focus{border-color:#4f7cff;background:#fff}
+    .fg textarea{resize:vertical;min-height:80px}
+    .fg .hint{font-size:12px;color:#9ca3af;margin-top:5px}
+    .founders-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:480px){.founders-grid{grid-template-columns:1fr}}
+    .founder-item{position:relative}
+    .founder-item input{padding-right:80px}
+    .founder-name{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:#4f7cff;font-weight:600;pointer-events:none}
+    .section-label{font-size:13px;font-weight:700;color:#1a1f36;margin-bottom:10px;padding:10px 0 6px;border-top:1px solid #eef0f5;margin-top:4px}
+    .info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;font-size:13px;color:#1e40af;margin-bottom:20px;line-height:1.6}
+    .info-box ul{padding-left:16px;margin-top:6px}
+    .info-box li{margin-bottom:4px}
+    .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid #eef0f5}
+    .btn-cancel{padding:10px 20px;background:#f3f4f6;border:none;border-radius:8px;color:#374151;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
+    .btn-submit{padding:10px 24px;background:linear-gradient(135deg,#4f7cff,#9b59b6);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+    .btn-submit:disabled{opacity:.6;cursor:not-allowed}
+    .alert{padding:12px 14px;border-radius:8px;font-size:13px;margin-top:16px}
+    .alert-s{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+    .alert-e{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+    .file-label{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;border:1.5px dashed #d1d5db;border-radius:8px;font-size:13px;cursor:pointer;color:#6b7280;transition:all .2s;width:100%;justify-content:center}
+    .file-label:hover{border-color:#4f7cff;color:#4f7cff}
+    .file-name{font-size:13px;color:#4f7cff;font-weight:500}
+  </style>
+</head>
+<body>
+<header>
+  <div class="hl">
+    <a href="/main" style="color:inherit;text-decoration:none;">인트라넷</a>
+    <span class="sep">›</span>
+    <a href="/club" style="color:inherit;text-decoration:none;">동호회</a>
+    <span class="sep">›</span>
+    <span>개설 신청</span>
+  </div>
+  <div class="hr">
+    <span class="ui"><%= user.name %> (<%= user.empNo %>)</span>
+    <a class="btn-lo" href="/logout">로그아웃</a>
+  </div>
+</header>
+
+<div class="container">
+  <div class="card">
+    <div class="card-title">동호회 개설 신청</div>
+    <div class="card-sub">신청자 본인 포함 5인(발기인 4명)이 필요합니다. 관리자 승인 후 동호회가 개설됩니다.</div>
+
+    <div class="info-box">
+      <strong>안내사항</strong>
+      <ul>
+        <li>신청자는 자동으로 회장으로 등록됩니다.</li>
+        <li>발기인 4명은 사번으로 입력하며, 입력 후 포커스를 이동하면 이름이 자동 조회됩니다.</li>
+        <li>회칙 파일은 PDF 형식만 업로드 가능합니다 (최대 5MB).</li>
+        <li>활동비: 가입순서 기준 1~2번째 동호회만 월 ₩30,000 지원</li>
+        <li>지원금: 1~2번째 동호회 각 ₩100,000 일시 지원 (최대 ₩200,000)</li>
+      </ul>
+    </div>
+
+    <form id="foundForm">
+      <div class="fg">
+        <label for="clubName">동호회명 <span class="req">*</span></label>
+        <input type="text" id="clubName" placeholder="예: 산악회" maxlength="50" required>
+      </div>
+
+      <div class="fg">
+        <label for="desc">소개</label>
+        <textarea id="desc" placeholder="동호회 소개를 입력하세요."></textarea>
+      </div>
+
+      <div class="fg">
+        <label>회칙 파일 (PDF)</label>
+        <label class="file-label" for="rulesFile">
+          <span>📄 파일 선택</span>
+          <input type="file" id="rulesFile" accept=".pdf" style="display:none" onchange="updateFileName(this)">
+        </label>
+        <div class="file-name" id="fileName"></div>
+      </div>
+
+      <div class="section-label">발기인 (4명) <span class="req">*</span></div>
+      <div class="fg">
+        <div class="hint">사번 입력 후 Tab 또는 포커스 이동 시 이름이 조회됩니다.</div>
+        <div class="founders-grid" style="margin-top:8px">
+          <div class="founder-item">
+            <input type="text" class="founder-input" placeholder="발기인1 사번" data-idx="0">
+            <span class="founder-name" id="fn0"></span>
+          </div>
+          <div class="founder-item">
+            <input type="text" class="founder-input" placeholder="발기인2 사번" data-idx="1">
+            <span class="founder-name" id="fn1"></span>
+          </div>
+          <div class="founder-item">
+            <input type="text" class="founder-input" placeholder="발기인3 사번" data-idx="2">
+            <span class="founder-name" id="fn2"></span>
+          </div>
+          <div class="founder-item">
+            <input type="text" class="founder-input" placeholder="발기인4 사번" data-idx="3">
+            <span class="founder-name" id="fn3"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="alertMsg"></div>
+
+      <div class="form-actions">
+        <a class="btn-cancel" href="/club">취소</a>
+        <button class="btn-submit" type="submit" id="submitBtn">개설 신청</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function updateFileName(input) {
+  var el = document.getElementById('fileName');
+  el.textContent = input.files.length ? input.files[0].name : '';
+}
+
+document.querySelectorAll('.founder-input').forEach(function(inp) {
+  inp.addEventListener('blur', async function() {
+    var empNo = this.value.trim();
+    var idx = this.dataset.idx;
+    var el = document.getElementById('fn' + idx);
+    if (!empNo) { el.textContent = ''; return; }
+    try {
+      var res = await fetch('/api/club/user/' + encodeURIComponent(empNo));
+      var data = await res.json();
+      el.textContent = data.found ? data.name : '미등록';
+    } catch(e) { el.textContent = ''; }
+  });
+});
+
+document.getElementById('foundForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var alertEl = document.getElementById('alertMsg');
+  alertEl.className = '';
+  alertEl.textContent = '';
+
+  var clubName = document.getElementById('clubName').value.trim();
+  var desc     = document.getElementById('desc').value.trim();
+  var founders = Array.from(document.querySelectorAll('.founder-input')).map(function(i){return i.value.trim();});
+
+  if (!clubName) { alertEl.className = 'alert alert-e'; alertEl.textContent = '동호회명을 입력하세요.'; return; }
+  if (founders.filter(Boolean).length < 4) { alertEl.className = 'alert alert-e'; alertEl.textContent = '발기인 4명을 모두 입력하세요.'; return; }
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+
+  var fd = new FormData();
+  fd.append('club_name', clubName);
+  fd.append('description', desc);
+  founders.forEach(function(f) { fd.append('founders[]', f); });
+  var file = document.getElementById('rulesFile').files[0];
+  if (file) fd.append('rules_file', file);
+
+  var res = await fetch('/api/club/found', { method: 'POST', body: fd });
+  var data = await res.json();
+  btn.disabled = false;
+
+  if (data.success) {
+    alertEl.className = 'alert alert-s';
+    alertEl.textContent = data.message;
+    setTimeout(function() { location.href = '/club'; }, 2000);
+  } else {
+    alertEl.className = 'alert alert-e';
+    alertEl.textContent = data.message;
+  }
+});
+</script>
+</body>
+</html>

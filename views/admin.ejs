@@ -34,10 +34,9 @@
       border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff;
       font-size: 13px; cursor: pointer; text-decoration: none; transition: background 0.2s;
     }
-
     .btn-logout:hover { background: rgba(255,255,255,0.2); }
 
-    .container { max-width: 1000px; margin: 0 auto; padding: 32px 16px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 16px; }
     .page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
     .page-title { font-size: 22px; font-weight: 700; }
     .btn-nav {
@@ -57,25 +56,35 @@
       padding-bottom: 12px; border-bottom: 1px solid #eef0f5;
     }
 
-    .form-row {
-      display: grid; grid-template-columns: 1fr 1fr 1fr auto;
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px; margin-bottom: 12px;
+    }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
       gap: 12px; align-items: end;
     }
-
-    @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid-2 { grid-template-columns: 1fr; }
+    }
 
     .form-group label {
       display: block; font-size: 12px; font-weight: 600; color: #6b7280;
       margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
     }
 
-    .form-group input {
+    .form-group input,
+    .form-group select {
       width: 100%; padding: 10px 14px; border: 1.5px solid #e5e7eb;
       border-radius: 8px; font-size: 14px; color: #1a1f36;
       transition: border-color 0.2s; outline: none; background: #fafafa;
     }
 
-    .form-group input:focus { border-color: #4f7cff; background: #fff; }
+    .form-group input:focus,
+    .form-group select:focus { border-color: #4f7cff; background: #fff; }
 
     .btn-add {
       padding: 10px 22px; height: 41px;
@@ -84,7 +93,6 @@
       font-size: 14px; font-weight: 600; cursor: pointer;
       white-space: nowrap; transition: opacity 0.2s;
     }
-
     .btn-add:hover { opacity: 0.85; }
     .btn-add:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -99,7 +107,6 @@
       padding: 8px 14px; border: 1.5px solid #e5e7eb; border-radius: 8px;
       font-size: 13px; outline: none; width: 220px; transition: border-color 0.2s;
     }
-
     .search-input:focus { border-color: #4f7cff; }
     .user-count { font-size: 13px; color: #6b7280; }
     .table-wrap { overflow-x: auto; }
@@ -109,16 +116,18 @@
 
     thead th {
       padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600;
-      color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;
+      color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
     }
 
     tbody tr { border-bottom: 1px solid #f3f4f6; transition: background 0.15s; }
     tbody tr:hover { background: #f8f9fc; }
-    tbody td { padding: 14px 16px; color: #374151; }
+    tbody td { padding: 12px 16px; color: #374151; }
 
     .role-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
     .role-admin { background: #ede9fe; color: #6d28d9; }
     .role-user  { background: #dbeafe; color: #1d4ed8; }
+
+    .cost-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; background: #f3f4f6; color: #374151; }
 
     .actions { display: flex; gap: 8px; }
 
@@ -141,12 +150,11 @@
       background: rgba(0,0,0,0.5); z-index: 200;
       align-items: center; justify-content: center;
     }
-
     .modal-overlay.show { display: flex; }
 
     .modal {
       background: #fff; border-radius: 14px; padding: 32px;
-      width: 100%; max-width: 420px; box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+      width: 100%; max-width: 480px; box-shadow: 0 24px 48px rgba(0,0,0,0.2);
     }
 
     .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
@@ -161,6 +169,8 @@
       width: 100%; padding: 10px 14px; border: 1.5px solid #e5e7eb;
       border-radius: 8px; font-size: 14px; outline: none; background: #fafafa;
     }
+
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
     .modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
 
@@ -198,7 +208,7 @@
   <!-- 사용자 추가 -->
   <div class="card">
     <div class="card-title">신규 사용자 추가</div>
-    <div class="form-row">
+    <div class="form-grid">
       <div class="form-group">
         <label for="newName">이름</label>
         <input type="text" id="newName" placeholder="홍길동">
@@ -210,6 +220,25 @@
       <div class="form-group">
         <label for="newPhone">연락처</label>
         <input type="text" id="newPhone" placeholder="010-1234-5678">
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label for="newDept">부서</label>
+        <input type="text" id="newDept" placeholder="운영1팀">
+      </div>
+      <div class="form-group">
+        <label for="newPosition">직급</label>
+        <input type="text" id="newPosition" placeholder="대리">
+      </div>
+      <div class="form-group">
+        <label for="newCostType">비용구분</label>
+        <select id="newCostType">
+          <option value="운영">운영</option>
+          <option value="판관">판관</option>
+          <option value="자동차">자동차</option>
+          <option value="운송">운송</option>
+        </select>
       </div>
       <button class="btn-add" id="addBtn" onclick="addUser()">추가</button>
     </div>
@@ -230,7 +259,9 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>이름</th><th>사번</th><th>연락처</th><th>권한</th><th>관리</th></tr>
+          <tr>
+            <th>이름</th><th>사번</th><th>연락처</th><th>부서</th><th>직급</th><th>비용구분</th><th>권한</th><th>관리</th>
+          </tr>
         </thead>
         <tbody id="userTableBody"></tbody>
       </table>
@@ -243,13 +274,32 @@
   <div class="modal">
     <div class="modal-title">사용자 정보 수정</div>
     <input type="hidden" id="editEmpNo">
-    <div class="form-group">
-      <label>이름</label>
-      <input type="text" id="editName">
+    <div class="modal-grid">
+      <div class="form-group">
+        <label>이름</label>
+        <input type="text" id="editName">
+      </div>
+      <div class="form-group">
+        <label>연락처</label>
+        <input type="text" id="editPhone">
+      </div>
+      <div class="form-group">
+        <label>부서</label>
+        <input type="text" id="editDept">
+      </div>
+      <div class="form-group">
+        <label>직급</label>
+        <input type="text" id="editPosition">
+      </div>
     </div>
     <div class="form-group">
-      <label>연락처</label>
-      <input type="text" id="editPhone">
+      <label>비용구분</label>
+      <select id="editCostType">
+        <option value="운영">운영</option>
+        <option value="판관">판관</option>
+        <option value="자동차">자동차</option>
+        <option value="운송">운송</option>
+      </select>
     </div>
     <div class="form-group">
       <label>권한</label>
@@ -279,7 +329,7 @@
     document.getElementById('userCount').textContent = '총 ' + users.length + '명';
     var tbody = document.getElementById('userTableBody');
     if (!users.length) {
-      tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">등록된 사용자가 없습니다.</div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state">등록된 사용자가 없습니다.</div></td></tr>';
       return;
     }
     tbody.innerHTML = users.map(function(u) {
@@ -287,6 +337,9 @@
         '<td><strong>' + esc(u.name) + '</strong></td>' +
         '<td>' + esc(u.empNo) + '</td>' +
         '<td>' + esc(u.phone) + '</td>' +
+        '<td>' + esc(u.deptName || '-') + '</td>' +
+        '<td>' + esc(u.position || '-') + '</td>' +
+        '<td><span class="cost-badge">' + esc(u.costType || '운영') + '</span></td>' +
         '<td><span class="role-badge ' + (u.role === 'admin' ? 'role-admin' : 'role-user') + '">' + (u.role === 'admin' ? '관리자' : '일반') + '</span></td>' +
         '<td><div class="actions">' +
           '<button class="btn-sm btn-edit"  onclick="openEdit(\'' + esc(u.empNo) + '\')">수정</button>' +
@@ -303,9 +356,12 @@
   }
 
   async function addUser() {
-    var name  = document.getElementById('newName').value.trim();
-    var empNo = document.getElementById('newEmpNo').value.trim();
-    var phone = document.getElementById('newPhone').value.trim();
+    var name     = document.getElementById('newName').value.trim();
+    var empNo    = document.getElementById('newEmpNo').value.trim();
+    var phone    = document.getElementById('newPhone').value.trim();
+    var deptName = document.getElementById('newDept').value.trim();
+    var position = document.getElementById('newPosition').value.trim();
+    var costType = document.getElementById('newCostType').value;
     var successEl = document.getElementById('addSuccess');
     var errorEl   = document.getElementById('addError');
     successEl.classList.remove('show');
@@ -320,10 +376,10 @@
     var btn = document.getElementById('addBtn');
     btn.disabled = true;
 
-    var res  = await fetch('/api/users', {
+    var res = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name, empNo: empNo, phone: phone })
+      body: JSON.stringify({ name, empNo, phone, deptName, position, costType })
     });
     var data = await res.json();
     btn.disabled = false;
@@ -331,9 +387,12 @@
     if (res.ok) {
       successEl.textContent = data.message;
       successEl.classList.add('show');
-      document.getElementById('newName').value  = '';
-      document.getElementById('newEmpNo').value = '';
-      document.getElementById('newPhone').value = '';
+      document.getElementById('newName').value     = '';
+      document.getElementById('newEmpNo').value    = '';
+      document.getElementById('newPhone').value    = '';
+      document.getElementById('newDept').value     = '';
+      document.getElementById('newPosition').value = '';
+      document.getElementById('newCostType').value = '운영';
       loadUsers();
     } else {
       errorEl.textContent = data.error;
@@ -344,10 +403,13 @@
   function openEdit(empNo) {
     var u = allUsers.find(function(u) { return u.empNo === empNo; });
     if (!u) return;
-    document.getElementById('editEmpNo').value = u.empNo;
-    document.getElementById('editName').value  = u.name;
-    document.getElementById('editPhone').value = u.phone;
-    document.getElementById('editRole').value  = u.role;
+    document.getElementById('editEmpNo').value    = u.empNo;
+    document.getElementById('editName').value     = u.name;
+    document.getElementById('editPhone').value    = u.phone;
+    document.getElementById('editDept').value     = u.deptName || '';
+    document.getElementById('editPosition').value = u.position || '';
+    document.getElementById('editCostType').value = u.costType || '운영';
+    document.getElementById('editRole').value     = u.role;
     document.getElementById('editModal').classList.add('show');
   }
 
@@ -356,15 +418,18 @@
   }
 
   async function saveEdit() {
-    var empNo = document.getElementById('editEmpNo').value;
-    var name  = document.getElementById('editName').value.trim();
-    var phone = document.getElementById('editPhone').value.trim();
-    var role  = document.getElementById('editRole').value;
+    var empNo    = document.getElementById('editEmpNo').value;
+    var name     = document.getElementById('editName').value.trim();
+    var phone    = document.getElementById('editPhone').value.trim();
+    var deptName = document.getElementById('editDept').value.trim();
+    var position = document.getElementById('editPosition').value.trim();
+    var costType = document.getElementById('editCostType').value;
+    var role     = document.getElementById('editRole').value;
 
     var res = await fetch('/api/users', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empNo: empNo, name: name, phone: phone, role: role })
+      body: JSON.stringify({ empNo, name, phone, deptName, position, costType, role })
     });
 
     if (res.ok) { closeModal(); loadUsers(); }
@@ -373,10 +438,10 @@
 
   async function resetPw(empNo, name) {
     if (!confirm(name + ' 사용자의 비밀번호를 사번으로 초기화하시겠습니까?')) return;
-    var res  = await fetch('/api/reset_password', {
+    var res = await fetch('/api/reset_password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empNo: empNo })
+      body: JSON.stringify({ empNo })
     });
     var data = await res.json();
     alert(data.message || data.error);
@@ -387,7 +452,7 @@
     var res = await fetch('/api/users', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empNo: empNo })
+      body: JSON.stringify({ empNo })
     });
     if (res.ok) loadUsers();
     else { var d = await res.json(); alert(d.error); }
