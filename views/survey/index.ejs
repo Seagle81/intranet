@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>식사 만족도 조사</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #1a1f36 0%, #2d3561 50%, #1a1f36 100%);
+      font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: #fff; border-radius: 24px;
+      padding: 48px 40px 44px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+      width: 100%; max-width: 480px; text-align: center;
+    }
+
+    .card-icon { font-size: 40px; margin-bottom: 8px; }
+
+    .card-title {
+      font-size: 14px; font-weight: 600; color: #6b7280;
+      letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;
+    }
+
+    .card-date { font-size: 13px; color: #9ca3af; margin-bottom: 36px; }
+
+    .question {
+      font-size: 22px; font-weight: 700; color: #1a1f36;
+      line-height: 1.4; margin-bottom: 44px;
+    }
+
+    .emoji-row {
+      display: flex; justify-content: center; gap: 20px;
+    }
+
+    .emoji-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      background: #f8f9fc; border: 2.5px solid #e5e7eb; border-radius: 20px;
+      padding: 22px 20px; cursor: pointer; transition: all 0.2s;
+      flex: 1; max-width: 130px;
+    }
+    .emoji-btn:hover { background: #f0f4ff; border-color: #4f7cff; transform: translateY(-4px); box-shadow: 0 8px 24px rgba(79,124,255,0.2); }
+    .emoji-btn:active { transform: translateY(-1px); }
+
+    .emoji { font-size: 52px; line-height: 1; display: block; }
+    .label { font-size: 13px; font-weight: 600; color: #374151; white-space: nowrap; }
+
+    .footer-note {
+      margin-top: 36px; font-size: 12px; color: #d1d5db;
+    }
+
+    /* Thank you overlay */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: linear-gradient(160deg, #1a1f36 0%, #2d3561 100%);
+      z-index: 999; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+    }
+    .overlay.show { display: flex; animation: fadeIn 0.4s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .overlay-emoji { font-size: 80px; animation: bounce 0.5s ease 0.2s both; }
+
+    @keyframes bounce {
+      0%   { transform: scale(0.5); opacity: 0; }
+      70%  { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .overlay-title {
+      font-size: 36px; font-weight: 800; color: #fff; letter-spacing: -0.5px;
+    }
+
+    .overlay-sub { font-size: 15px; color: rgba(255,255,255,0.6); }
+
+    @media (max-width: 420px) {
+      .card { padding: 36px 24px 32px; }
+      .question { font-size: 19px; }
+      .emoji { font-size: 44px; }
+      .emoji-btn { padding: 18px 12px; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-icon">🍽️</div>
+  <div class="card-title">사내식당 만족도 조사</div>
+  <div class="card-date" id="todayDate"></div>
+  <div class="question">오늘 식사는 어떠셨어요?</div>
+  <div class="emoji-row">
+    <button class="emoji-btn" onclick="vote('good')">
+      <span class="emoji">😊</span>
+      <span class="label">좋아요</span>
+    </button>
+    <button class="emoji-btn" onclick="vote('neutral')">
+      <span class="emoji">😐</span>
+      <span class="label">보통이에요</span>
+    </button>
+    <button class="emoji-btn" onclick="vote('bad')">
+      <span class="emoji">😤</span>
+      <span class="label">별로에요</span>
+    </button>
+  </div>
+  <div class="footer-note"><%= user.name %>님의 소중한 의견을 기다립니다</div>
+</div>
+
+<!-- 감사합니다 오버레이 -->
+<div class="overlay" id="thanksOverlay">
+  <div class="overlay-emoji">🙏</div>
+  <div class="overlay-title">감사합니다!</div>
+  <div class="overlay-sub">소중한 의견을 주셔서 감사합니다</div>
+</div>
+
+<script>
+  (function() {
+    var d = new Date();
+    var months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    document.getElementById('todayDate').textContent = d.getFullYear() + '년 ' + months[d.getMonth()] + ' ' + d.getDate() + '일 (' + ['일','월','화','수','목','금','토'][d.getDay()] + ')';
+  })();
+
+  var voting = false;
+
+  async function vote(response) {
+    if (voting) return;
+    voting = true;
+    try {
+      var res = await fetch('/api/survey', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ response: response })
+      });
+      if (res.status === 401) { location.href = '/login'; return; }
+      document.getElementById('thanksOverlay').classList.add('show');
+      setTimeout(function() { location.reload(); }, 2200);
+    } catch (e) {
+      voting = false;
+      alert('오류가 발생했습니다. 다시 시도해주세요.');
+    }
+  }
+</script>
+</body>
+</html>

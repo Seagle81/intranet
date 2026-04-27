@@ -184,6 +184,37 @@
       background: linear-gradient(135deg, #4f7cff, #9b59b6);
       border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
     }
+
+    .btn-upload {
+      padding: 10px 22px; height: 41px;
+      background: linear-gradient(135deg, #059669, #10b981);
+      border: none; border-radius: 8px; color: #fff;
+      font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.2s;
+    }
+    .btn-upload:hover { opacity: 0.85; }
+    .btn-upload:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-template {
+      padding: 8px 16px; background: #fff; border: 1.5px solid #e5e7eb;
+      border-radius: 8px; color: #374151; font-size: 13px; font-weight: 500;
+      text-decoration: none; display: inline-block; transition: background 0.2s;
+    }
+    .btn-template:hover { background: #f3f4f6; }
+
+    .upload-area {
+      border: 2px dashed #d1d5db; border-radius: 10px; padding: 20px 16px;
+      text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa; margin-bottom: 14px;
+    }
+    .upload-area:hover, .upload-area.dragover { border-color: #4f7cff; background: #f0f4ff; }
+    .upload-area-text { color: #6b7280; font-size: 14px; line-height: 1.7; }
+    .upload-area-text strong { color: #4f7cff; }
+
+    .upload-result { margin-top: 14px; font-size: 13px; }
+    .result-success { color: #065f46; font-weight: 600; font-size: 14px; padding: 8px 0; }
+    .result-fail-title { margin-top: 8px; color: #991b1b; font-weight: 600; }
+    .result-fail-table { margin-top: 8px; width: 100%; border-collapse: collapse; font-size: 12px; }
+    .result-fail-table th { background: #f8f9fc; padding: 6px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 11px; text-transform: uppercase; }
+    .result-fail-table td { padding: 6px 12px; border-bottom: 1px solid #f3f4f6; }
   </style>
 </head>
 <body>
@@ -245,6 +276,27 @@
     </div>
     <div class="alert alert-success" id="addSuccess"></div>
     <div class="alert alert-error"   id="addError"></div>
+  </div>
+
+  <!-- 엑셀 일괄 업로드 -->
+  <div class="card">
+    <div class="card-title">엑셀 일괄 업로드</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <a class="btn-template" href="/api/users/template">양식 다운로드 ↓</a>
+      <span style="font-size:13px;color:#6b7280;">이름·사번·연락처 필수 / 부서·직급·비용구분 선택 — 양식을 받아 작성 후 업로드하세요</span>
+    </div>
+    <div class="upload-area" id="uploadArea" onclick="triggerFileInput()">
+      <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)">
+      <div class="upload-area-text" id="uploadAreaText">
+        <strong>클릭하여 파일 선택</strong> 또는 여기로 파일을 끌어다 놓으세요<br>
+        <span style="font-size:12px;">.xlsx, .xls 파일 지원</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="btn-upload" id="uploadBtn" onclick="uploadExcel()" disabled>업로드</button>
+      <button class="btn-cancel" id="resetUploadBtn" onclick="resetUpload()" style="display:none;">취소</button>
+    </div>
+    <div id="uploadResult" class="upload-result"></div>
   </div>
 
   <!-- 사용자 목록 -->
@@ -497,6 +549,96 @@
 
   attachPhoneFormat('newPhone');
   attachPhoneFormat('editPhone');
+
+  // ── 엑셀 일괄 업로드 ─────────────────────────────────────
+  var _excelFile = null;
+
+  function triggerFileInput() {
+    document.getElementById('excelFile').click();
+  }
+
+  function handleFileSelect(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    _excelFile = file;
+    document.getElementById('uploadAreaText').innerHTML =
+      '<strong>' + esc(file.name) + '</strong><br>' +
+      '<span style="font-size:12px;color:#059669;">' + (file.size / 1024).toFixed(1) + ' KB — 업로드 준비 완료</span>';
+    document.getElementById('uploadBtn').disabled = false;
+    document.getElementById('resetUploadBtn').style.display = '';
+  }
+
+  function resetUpload() {
+    _excelFile = null;
+    document.getElementById('excelFile').value = '';
+    document.getElementById('uploadAreaText').innerHTML =
+      '<strong>클릭하여 파일 선택</strong> 또는 여기로 파일을 끌어다 놓으세요<br>' +
+      '<span style="font-size:12px;">.xlsx, .xls 파일 지원</span>';
+    document.getElementById('uploadBtn').disabled = true;
+    document.getElementById('resetUploadBtn').style.display = 'none';
+    document.getElementById('uploadResult').innerHTML = '';
+  }
+
+  async function uploadExcel() {
+    if (!_excelFile) return;
+    var btn = document.getElementById('uploadBtn');
+    var resultEl = document.getElementById('uploadResult');
+    btn.disabled = true;
+    btn.textContent = '처리 중...';
+    resultEl.innerHTML = '';
+
+    var formData = new FormData();
+    formData.append('file', _excelFile);
+
+    try {
+      var res = await fetch('/api/users/bulk', { method: 'POST', body: formData });
+      var data = await res.json();
+
+      if (!res.ok) {
+        resultEl.innerHTML = '<div class="alert alert-error show">' + esc(data.error || '업로드 실패') + '</div>';
+        btn.textContent = '업로드';
+        btn.disabled = false;
+        return;
+      }
+
+      var html = '<div class="result-success">✓ ' + data.success + '명 추가 완료</div>';
+      if (data.failed && data.failed.length > 0) {
+        html += '<div class="result-fail-title">✗ ' + data.failed.length + '건 실패</div>';
+        html += '<table class="result-fail-table"><thead><tr><th>행</th><th>사번</th><th>이름</th><th>실패 사유</th></tr></thead><tbody>';
+        data.failed.forEach(function(f) {
+          html += '<tr><td>' + f.row + '</td><td>' + esc(f.empNo) + '</td><td>' + esc(f.name) + '</td><td>' + esc(f.reason) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+
+      if (data.success > 0) loadUsers();
+      resetUpload();
+      resultEl.innerHTML = html;
+    } catch (e) {
+      resultEl.innerHTML = '<div class="alert alert-error show">업로드 중 오류가 발생했습니다.</div>';
+      btn.textContent = '업로드';
+      btn.disabled = false;
+    }
+  }
+
+  (function() {
+    var area = document.getElementById('uploadArea');
+    area.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('dragover'); });
+    area.addEventListener('dragleave', function() { this.classList.remove('dragover'); });
+    area.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('dragover');
+      var file = e.dataTransfer.files[0];
+      if (!file) return;
+      if (!file.name.match(/\.(xlsx|xls)$/i)) { alert('.xlsx 또는 .xls 파일만 업로드 가능합니다.'); return; }
+      _excelFile = file;
+      document.getElementById('uploadAreaText').innerHTML =
+        '<strong>' + esc(file.name) + '</strong><br>' +
+        '<span style="font-size:12px;color:#059669;">' + (file.size / 1024).toFixed(1) + ' KB — 업로드 준비 완료</span>';
+      document.getElementById('uploadBtn').disabled = false;
+      document.getElementById('resetUploadBtn').style.display = '';
+    });
+  })();
 
   document.getElementById('editModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();

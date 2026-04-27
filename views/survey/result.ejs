@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>식사 만족도 조사 - 결과</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh; background: #f0f2f5;
+      font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; color: #1a1f36;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1f36, #2d3561); color: #fff;
+      padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3); position: sticky; top: 0; z-index: 100;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; }
+
+    .badge {
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px; padding: 2px 10px; font-size: 11px; color: rgba(255,255,255,0.8);
+    }
+
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-info { font-size: 13px; color: rgba(255,255,255,0.7); }
+
+    .btn-logout {
+      padding: 7px 16px; background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff;
+      font-size: 13px; cursor: pointer; text-decoration: none; transition: background 0.2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.2); }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 16px; }
+
+    .page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .page-title { font-size: 22px; font-weight: 700; }
+    .btn-nav {
+      padding: 8px 16px; background: #fff; border: 1.5px solid #e5e7eb;
+      border-radius: 8px; color: #374151; font-size: 13px; font-weight: 500;
+      text-decoration: none; transition: background 0.2s; white-space: nowrap;
+    }
+    .btn-nav:hover { background: #f3f4f6; }
+
+    .card {
+      background: #fff; border-radius: 14px; padding: 24px 28px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 15px; font-weight: 600; margin-bottom: 18px;
+      padding-bottom: 12px; border-bottom: 1px solid #eef0f5;
+    }
+
+    .filter-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+
+    .form-group label {
+      display: block; font-size: 12px; font-weight: 600; color: #6b7280;
+      margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    .form-group input[type=date] {
+      padding: 9px 12px; border: 1.5px solid #e5e7eb; border-radius: 8px;
+      font-size: 14px; color: #1a1f36; outline: none; background: #fafafa; transition: border-color 0.2s;
+    }
+    .form-group input[type=date]:focus { border-color: #4f7cff; background: #fff; }
+
+    .btn-search {
+      padding: 10px 22px; height: 41px;
+      background: linear-gradient(135deg, #4f7cff, #9b59b6);
+      border: none; border-radius: 8px; color: #fff;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; white-space: nowrap;
+    }
+    .btn-search:hover { opacity: 0.85; }
+
+    .btn-excel {
+      padding: 10px 22px; height: 41px;
+      background: linear-gradient(135deg, #059669, #10b981);
+      border: none; border-radius: 8px; color: #fff;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+      white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-excel:hover { opacity: 0.85; }
+
+    .summary-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) { .summary-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .summary-box {
+      background: #f8f9fc; border-radius: 12px; padding: 16px;
+      text-align: center; border: 1.5px solid #e5e7eb;
+    }
+
+    .summary-emoji { font-size: 28px; margin-bottom: 6px; }
+    .summary-count { font-size: 26px; font-weight: 800; color: #1a1f36; }
+    .summary-label { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead tr { background: #f8f9fc; border-bottom: 2px solid #e5e7eb; }
+    thead th {
+      padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600;
+      color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #f3f4f6; transition: background 0.15s; }
+    tbody tr:hover { background: #f8f9fc; }
+    tbody td { padding: 12px 16px; color: #374151; }
+    td.num { font-weight: 600; }
+
+    .bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .bar { height: 8px; border-radius: 4px; min-width: 4px; transition: width 0.3s; }
+    .bar-good    { background: #10b981; }
+    .bar-neutral { background: #f59e0b; }
+    .bar-bad     { background: #ef4444; }
+
+    .empty-state { text-align: center; padding: 48px 0; color: #9ca3af; font-size: 14px; }
+
+    .list-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    인트라넷
+    <span class="badge">관리자</span>
+  </div>
+  <div class="header-right">
+    <span class="user-info"><%= user.name %> (<%= user.empNo %>)</span>
+    <a class="btn-logout" href="/logout">로그아웃</a>
+  </div>
+</header>
+
+<div class="container">
+  <div class="page-header">
+    <div class="page-title">🍽️ 식사 만족도 조사 결과</div>
+    <a class="btn-nav" href="/main">← 메인 메뉴</a>
+    <a class="btn-nav" href="/survey" target="_blank">설문 페이지 →</a>
+  </div>
+
+  <!-- 날짜 필터 -->
+  <div class="card">
+    <div class="card-title">기간 조회</div>
+    <div class="filter-row">
+      <div class="form-group">
+        <label>시작일</label>
+        <input type="date" id="fromDate">
+      </div>
+      <div class="form-group">
+        <label>종료일</label>
+        <input type="date" id="toDate">
+      </div>
+      <button class="btn-search" onclick="loadStats()">조회</button>
+    </div>
+  </div>
+
+  <!-- 요약 -->
+  <div class="summary-row" id="summaryRow" style="display:none;">
+    <div class="summary-box">
+      <div class="summary-emoji">📋</div>
+      <div class="summary-count" id="sumTotal">-</div>
+      <div class="summary-label">총 응답수</div>
+    </div>
+    <div class="summary-box">
+      <div class="summary-emoji">😊</div>
+      <div class="summary-count" id="sumGood">-</div>
+      <div class="summary-label">좋아요</div>
+    </div>
+    <div class="summary-box">
+      <div class="summary-emoji">😐</div>
+      <div class="summary-count" id="sumNeutral">-</div>
+      <div class="summary-label">보통이에요</div>
+    </div>
+    <div class="summary-box">
+      <div class="summary-emoji">😤</div>
+      <div class="summary-count" id="sumBad">-</div>
+      <div class="summary-label">별로에요</div>
+    </div>
+  </div>
+
+  <!-- 결과 테이블 -->
+  <div class="card">
+    <div class="list-actions">
+      <div class="card-title" style="margin:0;padding:0;border:none;">일별 결과</div>
+      <a class="btn-excel" id="excelBtn" href="#">엑셀 다운로드 ↓</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>날짜</th>
+            <th>😊 좋아요</th>
+            <th>😐 보통이에요</th>
+            <th>😤 별로에요</th>
+            <th>총 응답</th>
+            <th>분포</th>
+          </tr>
+        </thead>
+        <tbody id="statsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    var today = new Date();
+    var toStr = today.toISOString().slice(0, 10);
+    var from = new Date(today);
+    from.setDate(from.getDate() - 29);
+    var fromStr = from.toISOString().slice(0, 10);
+    document.getElementById('fromDate').value = fromStr;
+    document.getElementById('toDate').value   = toStr;
+  })();
+
+  function buildQuery() {
+    var from = document.getElementById('fromDate').value;
+    var to   = document.getElementById('toDate').value;
+    var p = [];
+    if (from) p.push('from=' + from);
+    if (to)   p.push('to='   + to);
+    return p.length ? '?' + p.join('&') : '';
+  }
+
+  async function loadStats() {
+    var qs = buildQuery();
+    document.getElementById('excelBtn').href = '/api/survey/export' + qs;
+
+    try {
+      var res = await fetch('/api/survey/stats' + qs);
+      if (res.status === 401) { location.href = '/login'; return; }
+      var rows = await res.json();
+      renderSummary(rows);
+      renderTable(rows);
+      document.getElementById('summaryRow').style.display = '';
+    } catch (e) {
+      document.getElementById('statsBody').innerHTML =
+        '<tr><td colspan="6"><div class="empty-state">데이터를 불러오지 못했습니다.</div></td></tr>';
+    }
+  }
+
+  function renderSummary(rows) {
+    var total = 0, good = 0, neutral = 0, bad = 0;
+    rows.forEach(function(r) {
+      total   += Number(r.total);
+      good    += Number(r.good);
+      neutral += Number(r.neutral);
+      bad     += Number(r.bad);
+    });
+    document.getElementById('sumTotal').textContent   = total;
+    document.getElementById('sumGood').textContent    = good;
+    document.getElementById('sumNeutral').textContent = neutral;
+    document.getElementById('sumBad').textContent     = bad;
+  }
+
+  function renderTable(rows) {
+    var tbody = document.getElementById('statsBody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">해당 기간에 응답 데이터가 없습니다.</div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(function(r) {
+      var total = Number(r.total) || 1;
+      var gPct  = Math.round(Number(r.good)    / total * 100);
+      var nPct  = Math.round(Number(r.neutral) / total * 100);
+      var bPct  = Math.round(Number(r.bad)     / total * 100);
+      return '<tr>' +
+        '<td><strong>' + r.date + '</strong></td>' +
+        '<td class="num">' + r.good + '</td>' +
+        '<td class="num">' + r.neutral + '</td>' +
+        '<td class="num">' + r.bad + '</td>' +
+        '<td class="num">' + r.total + '</td>' +
+        '<td><div class="bar-wrap">' +
+          '<div class="bar bar-good"    style="width:' + gPct + 'px" title="좋아요 ' + gPct + '%"></div>' +
+          '<div class="bar bar-neutral" style="width:' + nPct + 'px" title="보통 '   + nPct + '%"></div>' +
+          '<div class="bar bar-bad"     style="width:' + bPct + 'px" title="별로 '   + bPct + '%"></div>' +
+        '</div></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  loadStats();
+</script>
+</body>
+</html>

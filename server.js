@@ -32,6 +32,10 @@ app.use('/', require('./routes/progAuth'));
 app.use('/club', require('./routes/club/index'));
 app.use('/api/club', require('./routes/api/club'));
 
+// ── 식사 만족도 조사 ────────────────────────────────────────────────────────
+app.use('/survey', require('./routes/survey/index'));
+app.use('/api/survey', require('./routes/api/survey'));
+
 // ── MPOMS 프로그램 ─────────────────────────────────────────────────────────
 app.use('/mpoms/vesselci', require('./routes/mpoms/vesselci'));
 
